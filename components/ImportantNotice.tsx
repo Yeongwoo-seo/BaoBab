@@ -90,9 +90,6 @@ export default function ImportantNotice({ onAgreementChange }: ImportantNoticePr
                 required
                 className="mt-0.5 w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary flex-shrink-0"
               />
-              <span className="text-xs sm:text-sm text-gray-700">
-                위의 유의사항을 모두 숙지하였으며 이에 동의합니다. <span className="text-red-500">*</span>
-              </span>
             </label>
           </div>
         </div>
