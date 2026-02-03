@@ -51,11 +51,12 @@ export async function ensureNextWeekCapacity(): Promise<void> {
  * 특정 날짜의 재고 정보 가져오기
  */
 export async function getCapacity(date: string): Promise<DailyCapacity | null> {
-  if (!db) {
+  if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
     return null
   }
 
   try {
+    const db = getDb()
     const capacityRef = doc(db, 'daily_capacity', date)
     const capacitySnap = await getDoc(capacityRef)
 
