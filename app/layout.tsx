@@ -12,6 +12,25 @@ export const metadata: Metadata = {
     initialScale: 1,
     maximumScale: 5,
   },
+  openGraph: {
+    title: 'Bao Bab - Modern Australian Lunchbox',
+    description: '호주 시드니 기반 도시락 브랜드 Bao Bab의 온라인 주문 시스템',
+    images: [
+      {
+        url: '/data/baobab.png',
+        width: 1200,
+        height: 630,
+        alt: 'Bao Bab Logo',
+      },
+    ],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Bao Bab - Modern Australian Lunchbox',
+    description: '호주 시드니 기반 도시락 브랜드 Bao Bab의 온라인 주문 시스템',
+    images: ['/data/baobab.png'],
+  },
 }
 
 export default function RootLayout({
