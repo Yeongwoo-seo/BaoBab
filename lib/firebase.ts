@@ -55,6 +55,11 @@ function getFirebaseAuth(): Auth | undefined {
 export function getDb(): Firestore {
   if (!_db) {
     if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+      console.warn('Firebase is not configured. Please set NEXT_PUBLIC_FIREBASE_PROJECT_ID')
+      // 개발 환경에서는 에러를 던지지 않고 경고만 표시
+      if (typeof window !== 'undefined') {
+        console.warn('Firebase 환경 변수가 설정되지 않았습니다. Vercel 환경 변수를 확인하세요.')
+      }
       throw new Error('Firebase is not configured. Please set NEXT_PUBLIC_FIREBASE_PROJECT_ID')
     }
     _db = getFirestoreDb()
