@@ -5,7 +5,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs sm:text-sm text-gray-600">
           <div>
             <h3 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">사업자 정보</h3>
-            <p>Bao Bab Lunchbox PTY LTD</p>
+            <p>Bao Bab Lunchbox</p>
             <p>Unit 804, 2C Wharf Road</p>
             <p>Melrose Park, NSW</p>
           </div>
@@ -16,7 +16,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200 text-center text-[10px] sm:text-xs text-gray-500">
-          <p>© 2026 Bao Bab Lunchbox PTY LTD. All rights reserved.</p>
+          <p>© 2026 Bao Bab Lunchbox. All rights reserved.</p>
         </div>
       </div>
     </footer>
