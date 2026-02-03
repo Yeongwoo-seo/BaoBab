@@ -9,9 +9,9 @@ export default function Header() {
           <Image
             src="/data/baobab.png"
             alt="Bao Bab"
-            width={120}
-            height={40}
-            className="h-8 sm:h-10 w-auto"
+            width={144}
+            height={48}
+            className="h-10 sm:h-12 w-auto"
             priority
           />
         </Link>
