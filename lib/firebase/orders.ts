@@ -308,3 +308,30 @@ export async function settleOrderDate(
     updated_at: new Date().toISOString(),
   }
 }
+
+/**
+ * 주문 삭제
+ */
+export async function deleteOrder(orderId: string): Promise<void> {
+  if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+    throw new Error('Firebase is not configured. Please check environment variables.')
+  }
+
+  try {
+    const db = getDb()
+    const orderRef = doc(db, 'orders', orderId)
+    
+    // 주문 존재 확인
+    const orderSnap = await getDoc(orderRef)
+    if (!orderSnap.exists()) {
+      throw new Error('주문을 찾을 수 없습니다.')
+    }
+
+    // 주문 삭제
+    await deleteDoc(orderRef)
+    console.log('Order deleted:', orderId)
+  } catch (error: any) {
+    console.error('Error deleting order:', error)
+    throw error
+  }
+}
