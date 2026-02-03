@@ -8,10 +8,16 @@ import { incrementOrderCount } from './dailyCapacity'
  */
 export async function createOrder(data: OrderFormData): Promise<Order> {
   if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
-    throw new Error('Firebase is not configured')
+    console.error('Firebase configuration missing:', {
+      hasProjectId: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      hasApiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    })
+    throw new Error('Firebase is not configured. Please check environment variables.')
   }
 
-  const db = getDb()
+  try {
+    const db = getDb()
+    console.log('Firebase connected, creating order...')
 
   // 1. 다음 주 데이터 자동 생성 확인
   const { ensureNextWeekCapacity } = await import('./dailyCapacity')
@@ -84,18 +90,28 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
     orderData.allergies = data.allergies
   }
 
-  const orderRef = await addDoc(ordersRef, orderData)
+    const orderRef = await addDoc(ordersRef, orderData)
+    console.log('Order document created:', orderRef.id)
 
-  return {
-    id: orderRef.id,
-    customer_name: data.name,
-    contact: data.contact,
-    location: data.location,
-    payment_method: data.payment_method,
-    allergies: data.allergies,
-    settlements: settlements,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    return {
+      id: orderRef.id,
+      customer_name: data.name,
+      contact: data.contact,
+      location: data.location,
+      payment_method: data.payment_method,
+      allergies: data.allergies,
+      settlements: settlements,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  } catch (error: any) {
+    console.error('Error in createOrder:', error)
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+    })
+    throw error
   }
 }
 

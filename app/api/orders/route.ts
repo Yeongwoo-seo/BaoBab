@@ -5,10 +5,17 @@ import { OrderFormData } from '@/types'
 export async function POST(request: NextRequest) {
   try {
     const body: OrderFormData = await request.json()
+    console.log('Creating order with data:', { ...body, contact: body.contact?.replace(/\D/g, '') })
     const order = await createOrder(body)
+    console.log('Order created successfully:', order.id)
     return NextResponse.json(order, { status: 201 })
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 })
+    console.error('Error creating order:', error)
+    console.error('Error stack:', error.stack)
+    return NextResponse.json({ 
+      error: error.message || '주문 처리 중 오류가 발생했습니다.',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 400 })
   }
 }
 
