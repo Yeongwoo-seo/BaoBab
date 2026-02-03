@@ -99,7 +99,10 @@ export default function MyOrdersPage() {
       <Header />
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
         <div className="bg-white rounded-card shadow-card p-4 sm:p-6 md:p-8">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">내 주문 조회</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">
+            내 주문 조회
+            <span className="ml-2 text-sm sm:text-base font-normal text-gray-600">알러지</span>
+          </h2>
           
           <div className="mb-6">
             <label htmlFor="contact" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
