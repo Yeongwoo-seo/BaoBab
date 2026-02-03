@@ -1,0 +1,5 @@
+{
+  "extensions.ignoreRecommendations": true,
+  "extensions.showRecommendationsOnlyOnDemand": true,
+  "json.schemas": []
+}

@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 새로운 재료 컬렉션 (자동 업로드용)
+    match /ingredients/{ingredientId} {
+      allow read, write: if true;
+    }
+    
+    // 레시피 컬렉션
+    match /recipes/{recipeId} {
+      allow read, write: if true;
+    }
+    
+    // 재고 컬렉션
+    match /inventory/{itemId} {
+      allow read, write: if true;
+    }
+    
+    // 일일 메뉴 컬렉션
+    match /dailyMenus/{menuId} {
+      allow read, write: if true;
+    }
+    
+    // 비즈니스 메트릭스
+    match /businessMetrics/{document=**} {
+      allow read, write: if true;
+    }
+    
+    // 재료 가격 (기존)
+    match /ingredientPrices/{document=**} {
+      allow read, write: if true;
+    }
+    
+    // 팀 설정
+    match /teams/{teamId} {
+      allow read, write: if true;
+    }
+    
+    // 추가 컬렉션들 (미래 확장용)
+    match /suppliers/{supplierId} {
+      allow read, write: if true;
+    }
+    
+    match /products/{productId} {
+      allow read, write: if true;
+    }
+    
+    // Bao Bab 프로젝트 컬렉션들
+    // 공지사항: 모든 사용자가 읽기 가능
+    match /notices/{noticeId} {
+      allow read: if true;
+      allow write: if false; // Firebase Console에서만 작성
+    }
+    
+    // 재고 정보: 모든 사용자가 읽기 가능, 쓰기도 허용 (개발 단계)
+    match /daily_capacity/{date} {
+      allow read: if true;
+      allow write: if true; // 개발 단계: 나중에 인증 추가
+    }
+    
+    // 주문: 모든 사용자가 생성/읽기/수정 가능 (개발 단계)
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read: if true; // 개발 단계: 나중에 본인 연락처로만 제한
+      allow update: if true; // 개발 단계: 나중에 관리자만으로 제한
+    }
+    
+    // 고객 정보: 개발 단계에서는 모두 접근 가능
+    match /customer/{customerId} {
+      allow read: if true; // 개발 단계: 나중에 본인 연락처로만 제한
+      allow create: if true; // 개발 단계: 나중에 관리자만으로 제한
+      allow update: if true; // 개발 단계: 나중에 관리자만으로 제한
+      allow delete: if true; // 개발 단계: 나중에 관리자만으로 제한
+    }
+  }
+}
