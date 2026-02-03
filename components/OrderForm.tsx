@@ -12,9 +12,10 @@ interface OrderFormProps {
     location: Location
     orderDates: string[]
   }) => Promise<void>
+  isAgreed?: boolean
 }
 
-export default function OrderForm({ onSubmit }: OrderFormProps) {
+export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps) {
   const router = useRouter()
   const [name, setName] = useState('')
   const [contact, setContact] = useState('')
@@ -25,7 +26,6 @@ export default function OrderForm({ onSubmit }: OrderFormProps) {
   const [capacities, setCapacities] = useState<Record<string, DailyCapacity>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [isAgreed, setIsAgreed] = useState(false)
 
   const weekDates = getNextWeekDates()
 
@@ -345,21 +345,6 @@ export default function OrderForm({ onSubmit }: OrderFormProps) {
         <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
           특정 식재료에 알러지가 있으신 경우 기입해 주세요.
         </p>
-      </div>
-
-      <div className="pt-2 pb-2">
-        <label className="flex items-start gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={isAgreed}
-            onChange={(e) => setIsAgreed(e.target.checked)}
-            required
-            className="mt-0.5 w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary flex-shrink-0"
-          />
-          <span className="text-xs sm:text-sm text-gray-700">
-            유의사항을 모두 숙지하였으며 이에 동의합니다. <span className="text-red-500">*</span>
-          </span>
-        </label>
       </div>
 
       <button
