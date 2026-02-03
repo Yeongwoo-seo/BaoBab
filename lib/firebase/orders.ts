@@ -1,5 +1,5 @@
 import { getDb } from '@/lib/firebase'
-import { collection, addDoc, getDocs, query, where, orderBy, Timestamp, doc, updateDoc, getDoc } from 'firebase/firestore'
+import { collection, addDoc, getDocs, query, where, orderBy, Timestamp, doc, updateDoc, getDoc, deleteDoc } from 'firebase/firestore'
 import { Order, OrderFormData, OrderSettlement } from '@/types'
 
 /**

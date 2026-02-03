@@ -51,6 +51,31 @@ export default function MyOrdersPage() {
     }
   }
 
+  const handleCancelOrder = async (orderId: string) => {
+    if (!confirm('정말 이 주문을 취소하시겠습니까?\n\n취소된 주문은 복구할 수 없습니다.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '주문 취소 중 오류가 발생했습니다.')
+      }
+
+      // 주문 목록에서 제거
+      setOrders(orders.filter(order => order.id !== orderId))
+      alert('주문이 취소되었습니다.')
+    } catch (err: any) {
+      console.error('Error canceling order:', err)
+      alert(err.message || '주문 취소 중 오류가 발생했습니다.')
+    }
+  }
+
   const formatOrderDate = (dateStr: string) => {
     const date = new Date(dateStr)
     const month = date.getMonth() + 1
@@ -147,6 +172,14 @@ export default function MyOrdersPage() {
                         <p className="text-xs sm:text-sm text-gray-700">{order.allergies}</p>
                       </div>
                     )}
+                    <div className="pt-2 border-t border-gray-100 flex justify-end">
+                      <button
+                        onClick={() => handleCancelOrder(order.id)}
+                        className="px-3 py-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded-card transition-colors"
+                      >
+                        취소
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -160,6 +193,7 @@ export default function MyOrdersPage() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">수령장소</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">수령 희망 요일</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">알러지 정보</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">작업</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -185,6 +219,12 @@ export default function MyOrdersPage() {
                           {order.allergies || '-'}
                         </td>
                         <td className="px-4 py-3 text-xs sm:text-sm">
+                          <button
+                            onClick={() => handleCancelOrder(order.id)}
+                            className="px-3 py-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded-card transition-colors"
+                          >
+                            취소
+                          </button>
                         </td>
                       </tr>
                     ))}
