@@ -9,6 +9,10 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://baobab.food'
 export const metadata: Metadata = {
   title: 'Bao Bab - Modern Australian Lunchbox',
   description: '호주 시드니 기반 도시락 브랜드 Bao Bab의 온라인 주문 시스템',
+  icons: {
+    icon: '/data/baobab.png',
+    apple: '/data/baobab.png',
+  },
   viewport: {
     width: 'device-width',
     initialScale: 1,
@@ -50,6 +54,8 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
         />
+        <link rel="icon" type="image/png" href="/data/baobab.png" />
+        <link rel="apple-touch-icon" href="/data/baobab.png" />
       </head>
       <body className={`${inter.className} font-pretendard antialiased`}>
         {children}
