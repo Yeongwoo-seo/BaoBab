@@ -74,6 +74,32 @@ export default function AdminCapacityPage() {
         </div>
 
         <div className="bg-white rounded-card shadow-card p-4 sm:p-6">
+          <div className="mb-4 flex justify-end">
+            <button
+              onClick={async () => {
+                if (confirm('daily_capacity 컬렉션의 모든 데이터를 삭제하시겠습니까?\n\n이제 daily_capacity는 사용하지 않으므로 정리용입니다.')) {
+                  try {
+                    const response = await fetch('/api/admin/reset-capacity', {
+                      method: 'POST',
+                    })
+                    const result = await response.json()
+                    if (response.ok) {
+                      alert(result.message)
+                      fetchCapacities()
+                    } else {
+                      alert(`오류: ${result.error}`)
+                    }
+                  } catch (error) {
+                    console.error('Error resetting capacity:', error)
+                    alert('초기화 중 오류가 발생했습니다.')
+                  }
+                }
+              }}
+              className="px-4 py-2 bg-red-500 text-white rounded-card hover:bg-red-600 transition-colors text-sm"
+            >
+              daily_capacity 초기화
+            </button>
+          </div>
           {loading ? (
             <div className="text-center text-gray-600 py-8">로딩 중...</div>
           ) : (
