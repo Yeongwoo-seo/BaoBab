@@ -58,11 +58,12 @@ service cloud.firestore {
       allow write: if true; // 개발 단계: 나중에 인증 추가
     }
     
-    // 주문: 모든 사용자가 생성/읽기/수정 가능 (개발 단계)
+    // 주문: 모든 사용자가 생성/읽기/수정/삭제 가능 (개발 단계)
     match /orders/{orderId} {
       allow create: if true;
       allow read: if true; // 개발 단계: 나중에 본인 연락처로만 제한
       allow update: if true; // 개발 단계: 나중에 관리자만으로 제한
+      allow delete: if true; // 개발 단계: 나중에 본인 주문만 삭제 가능하도록 제한
     }
     
     // 고객 정보: 개발 단계에서는 모두 접근 가능
