@@ -136,7 +136,7 @@ export async function getOrders(filters?: {
 
     snapshot.forEach((doc) => {
       try {
-        const data = doc.data()
+        const data = doc.data() as any
         
         // 필수 필드 검증
         if (!data.customer_name || !data.contact || !data.location) {
