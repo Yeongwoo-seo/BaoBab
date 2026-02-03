@@ -152,7 +152,7 @@ export default function MyOrdersPage() {
                       </div>
                     </div>
                     <div className="pt-2 border-t border-gray-100">
-                      <p className="text-[10px] sm:text-xs text-gray-500 mb-1.5">수령 희망 요일</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500 mb-1.5">수령예정일</p>
                       <div className="flex flex-wrap gap-1.5">
                         {order.settlements?.map((settlement) => (
                           <span
@@ -188,10 +188,10 @@ export default function MyOrdersPage() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">주문일시</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">수령장소</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">수령 희망 요일</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">알러지 정보</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">취소</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[15%]">수령장소</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">수령예정일</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-[15%]">알러지 정보</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-auto">취소</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -216,10 +216,10 @@ export default function MyOrdersPage() {
                         <td className="px-4 py-3 text-xs sm:text-sm text-gray-900">
                           {order.allergies || '-'}
                         </td>
-                        <td className="px-4 py-3 text-xs sm:text-sm w-32">
+                        <td className="px-4 py-3 text-xs sm:text-sm">
                           <button
                             onClick={() => handleCancelOrder(order.id)}
-                            className="w-full px-4 py-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded-card transition-colors"
+                            className="px-3 py-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded-card transition-colors whitespace-nowrap"
                           >
                             취소
                           </button>
