@@ -150,7 +150,7 @@ export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps
     }
 
     if (!isAgreed) {
-      setError('유의사항에 동의해주세요.')
+      setError('유의사항에 동의해주세요. 유의사항을 확인하고 체크박스를 선택해주세요.')
       return
     }
 
@@ -349,11 +349,18 @@ export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps
 
       <button
         type="submit"
-        disabled={loading || !isAgreed}
-        className="w-full bg-primary hover:bg-primary-dark active:bg-primary-dark text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 min-h-[48px] sm:min-h-[52px] rounded-card shadow-card transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+        disabled={loading}
+        className={`w-full bg-primary hover:bg-primary-dark active:bg-primary-dark text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 min-h-[48px] sm:min-h-[52px] rounded-card shadow-card transition-all text-sm sm:text-base ${
+          loading || !isAgreed ? 'opacity-50 cursor-not-allowed' : ''
+        }`}
       >
         {loading ? '처리 중...' : '주문하기'}
       </button>
+      {!isAgreed && (
+        <p className="text-xs sm:text-sm text-red-600 text-center mt-2">
+          유의사항을 확인하고 동의해주세요.
+        </p>
+      )}
     </form>
   )
 }
