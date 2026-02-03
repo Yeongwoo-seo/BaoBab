@@ -12,6 +12,7 @@ export default function AdminOrdersPage() {
     startDate: '',
     endDate: '',
     location: '',
+    paymentStatus: '',
   })
 
   // 현재 월의 시작일과 종료일 계산
