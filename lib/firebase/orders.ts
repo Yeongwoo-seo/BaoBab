@@ -1,7 +1,6 @@
 import { getDb } from '@/lib/firebase'
 import { collection, addDoc, getDocs, query, where, orderBy, Timestamp, doc, updateDoc, getDoc } from 'firebase/firestore'
 import { Order, OrderFormData, OrderSettlement } from '@/types'
-import { incrementOrderCount } from './dailyCapacity'
 
 /**
  * 주문 생성
@@ -19,14 +18,18 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
     const db = getDb()
     console.log('Firebase connected, creating order...')
 
-  // 1. 다음 주 데이터 자동 생성 확인
-  const { ensureNextWeekCapacity } = await import('./dailyCapacity')
-  await ensureNextWeekCapacity()
+    // 재고 확인: orders 컬렉션에서 날짜별 주문 건수 확인
+    const { getCapacities } = await import('./dailyCapacity')
+    const capacities = await getCapacities(data.orderDates)
+    
+    // 재고 부족 확인
+    for (const capacity of capacities) {
+      if (capacity.current_order_count >= capacity.max_capa) {
+        throw new Error(`${capacity.date} 날짜는 재고가 부족합니다. (${capacity.current_order_count}/${capacity.max_capa})`)
+      }
+    }
 
-  // 2. 재고 확인 및 주문 수 증가 (트랜잭션)
-  await incrementOrderCount(data.orderDates)
-
-  // 3. 고객 정보 확인 또는 생성
+    // 고객 정보 확인 또는 생성
   const customerRef = collection(db, 'customer')
   const customerQuery = query(customerRef, where('contact', '==', data.contact))
   const customerSnapshot = await getDocs(customerQuery)

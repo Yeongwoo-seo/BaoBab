@@ -47,30 +47,16 @@ export default function AdminCapacityPage() {
   }
 
   const updateCapacity = async (date: string, field: 'max_capa' | 'is_closed', value: number | boolean) => {
-    try {
-      const capacity = capacities[date]
-      const updateData: any = {
-        date,
-        [field]: value,
-      }
-
-      if (field === 'max_capa' && capacity) {
-        updateData.max_capa = value
-      } else if (field === 'is_closed') {
-        updateData.is_closed = value
-      }
-
-      const response = await fetch('/api/capacity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData),
-      })
-
-      if (response.ok) {
-        fetchCapacities()
-      }
-    } catch (error) {
-      console.error('Error updating capacity:', error)
+    // daily_capacity 컬렉션을 사용하지 않으므로 업데이트 불가
+    // max_capa는 고정값 30, is_closed는 별도 구현 필요
+    console.warn('Capacity updates are not supported. Capacity is calculated from orders collection.')
+    
+    // is_closed 기능이 필요하면 별도 컬렉션(예: daily_settings)에 저장 필요
+    if (field === 'is_closed') {
+      // TODO: 별도 컬렉션에 is_closed 저장 구현 필요
+      alert('마감 기능은 현재 지원되지 않습니다. 필요시 별도 구현이 필요합니다.')
+    } else {
+      alert('최대 Capa는 고정값 30입니다. 변경할 수 없습니다.')
     }
   }
 
@@ -117,11 +103,10 @@ export default function AdminCapacityPage() {
                         <input
                           type="number"
                           value={capacity?.max_capa || 30}
-                          onChange={(e) =>
-                            updateCapacity(dateStr, 'max_capa', parseInt(e.target.value) || 0)
-                          }
-                          className="w-20 px-2 py-2 min-h-[44px] border border-gray-300 rounded-card text-base"
+                          disabled
+                          className="w-20 px-2 py-2 min-h-[44px] border border-gray-300 rounded-card text-base bg-gray-100 cursor-not-allowed"
                           min="0"
+                          title="최대 Capa는 고정값 30입니다"
                         />
                       </div>
                       <label className="flex items-center gap-2 cursor-pointer min-h-[44px]">

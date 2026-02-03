@@ -1,78 +1,59 @@
 import { getDb } from '@/lib/firebase'
-import { collection, doc, getDoc, setDoc, getDocs, query, where, writeBatch, Timestamp } from 'firebase/firestore'
+import { collection, getDocs, query, where } from 'firebase/firestore'
 import { DailyCapacity } from '@/types'
-import { getNextWeekDates, formatDate } from '@/lib/utils'
 
 /**
- * 오늘 날짜 기준으로 다음 주 데이터가 없으면 자동 생성
+ * orders 컬렉션에서 특정 날짜의 주문 건수 계산
  */
-export async function ensureNextWeekCapacity(): Promise<void> {
+async function getOrderCountForDate(date: string): Promise<number> {
+  if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+    return 0
+  }
+
   try {
-    // Firebase 설정 확인
-    if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
-      return
-    }
-
     const db = getDb()
-    const weekDates = getNextWeekDates()
-    const dateStrings = weekDates.map(formatDate)
+    const ordersRef = collection(db, 'orders')
     
-    const batch = writeBatch(db)
-    let needsUpdate = false
-
-    for (const dateStr of dateStrings) {
-      const capacityRef = doc(db, 'daily_capacity', dateStr)
-      const capacitySnap = await getDoc(capacityRef)
-
-      if (!capacitySnap.exists()) {
-        // 데이터가 없으면 기본값으로 생성
-        batch.set(capacityRef, {
-          date: dateStr,
-          max_capa: 30,
-          current_order_count: 0,
-          is_closed: false,
-          created_at: Timestamp.now(),
-          updated_at: Timestamp.now(),
-        })
-        needsUpdate = true
+    // settlements 배열에 해당 날짜가 포함된 주문 찾기
+    const ordersSnapshot = await getDocs(ordersRef)
+    let count = 0
+    
+    ordersSnapshot.forEach((doc) => {
+      const data = doc.data()
+      const settlements = data.settlements || []
+      
+      // settlements 배열에서 해당 날짜 찾기
+      const hasDate = settlements.some((settlement: any) => settlement.date === date)
+      if (hasDate) {
+        count++
       }
-    }
-
-    if (needsUpdate) {
-      await batch.commit()
-    }
+    })
+    
+    return count
   } catch (error) {
-    console.error('Error ensuring next week capacity:', error)
-    // 에러 발생 시 조용히 실패 (기본값 사용)
+    console.error('Error counting orders for date:', error)
+    return 0
   }
 }
 
 /**
  * 특정 날짜의 재고 정보 가져오기
+ * orders 컬렉션에서 직접 계산 (30 - 주문 건수)
  */
 export async function getCapacity(date: string): Promise<DailyCapacity | null> {
-  if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
-    return null
-  }
-
   try {
-    const db = getDb()
-    const capacityRef = doc(db, 'daily_capacity', date)
-    const capacitySnap = await getDoc(capacityRef)
-
-    if (!capacitySnap.exists()) {
-      return null
-    }
-
-    const data = capacitySnap.data()
+    const orderCount = await getOrderCountForDate(date)
+    const maxCapa = 30
+    const remaining = maxCapa - orderCount
+    
     return {
-      id: capacitySnap.id,
-      date: data.date,
-      max_capa: data.max_capa,
-      current_order_count: data.current_order_count,
-      is_closed: data.is_closed,
-      created_at: data.created_at?.toDate().toISOString() || '',
-      updated_at: data.updated_at?.toDate().toISOString() || '',
+      id: date,
+      date: date,
+      max_capa: maxCapa,
+      current_order_count: orderCount,
+      is_closed: false, // is_closed는 별도 관리 필요 시 추가
+      created_at: '',
+      updated_at: '',
     }
   } catch (error) {
     console.error('Error getting capacity:', error)
@@ -82,13 +63,13 @@ export async function getCapacity(date: string): Promise<DailyCapacity | null> {
 
 /**
  * 여러 날짜의 재고 정보 가져오기
+ * orders 컬렉션에서 직접 계산
  */
 export async function getCapacities(dates: string[]): Promise<DailyCapacity[]> {
   try {
-    // Firebase 설정 확인
     if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
       return dates.map((dateStr) => ({
-        id: '',
+        id: dateStr,
         date: dateStr,
         max_capa: 30,
         current_order_count: 0,
@@ -98,32 +79,45 @@ export async function getCapacities(dates: string[]): Promise<DailyCapacity[]> {
       }))
     }
 
-    const capacities: DailyCapacity[] = []
+    const db = getDb()
+    const ordersRef = collection(db, 'orders')
     
-    for (const dateStr of dates) {
-      const capacity = await getCapacity(dateStr)
-      if (capacity) {
-        capacities.push(capacity)
-      } else {
-        // 데이터가 없으면 기본값 반환
-        capacities.push({
-          id: '',
-          date: dateStr,
-          max_capa: 30,
-          current_order_count: 0,
-          is_closed: false,
-          created_at: '',
-          updated_at: '',
-        })
-      }
-    }
-
-    return capacities
+    // 모든 주문 가져오기 (한 번만 조회)
+    const ordersSnapshot = await getDocs(ordersRef)
+    
+    // 날짜별 주문 건수 계산
+    const orderCounts: Record<string, number> = {}
+    dates.forEach(date => {
+      orderCounts[date] = 0
+    })
+    
+    ordersSnapshot.forEach((doc) => {
+      const data = doc.data()
+      const settlements = data.settlements || []
+      
+      settlements.forEach((settlement: any) => {
+        const date = settlement.date
+        if (orderCounts.hasOwnProperty(date)) {
+          orderCounts[date]++
+        }
+      })
+    })
+    
+    // DailyCapacity 배열 생성
+    return dates.map((dateStr) => ({
+      id: dateStr,
+      date: dateStr,
+      max_capa: 30,
+      current_order_count: orderCounts[dateStr] || 0,
+      is_closed: false,
+      created_at: '',
+      updated_at: '',
+    }))
   } catch (error) {
     console.error('Error getting capacities:', error)
     // 에러 발생 시 기본값 반환
     return dates.map((dateStr) => ({
-      id: '',
+      id: dateStr,
       date: dateStr,
       max_capa: 30,
       current_order_count: 0,
@@ -135,84 +129,19 @@ export async function getCapacities(dates: string[]): Promise<DailyCapacity[]> {
 }
 
 /**
- * 재고 업데이트
+ * 재고 업데이트 (is_closed만 관리, max_capa는 고정값 30)
+ * 주의: daily_capacity 컬렉션을 사용하지 않으므로 별도 저장소 필요 시 구현
  */
 export async function updateCapacity(
   date: string,
   updates: Partial<Pick<DailyCapacity, 'max_capa' | 'is_closed'>>
 ): Promise<void> {
-  if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
-    throw new Error('Firebase is not configured')
-  }
-
-  try {
-    const db = getDb()
-    const capacityRef = doc(db, 'daily_capacity', date)
-    const capacitySnap = await getDoc(capacityRef)
-
-    const updateData: any = {
-      updated_at: Timestamp.now(),
-      ...updates,
-    }
-
-    if (capacitySnap.exists()) {
-      await setDoc(capacityRef, updateData, { merge: true })
-    } else {
-      await setDoc(capacityRef, {
-        date,
-        max_capa: updates.max_capa || 30,
-        current_order_count: 0,
-        is_closed: updates.is_closed || false,
-        created_at: Timestamp.now(),
-        ...updateData,
-      })
-    }
-  } catch (error) {
-    console.error('Error updating capacity:', error)
-    throw error
-  }
+  // daily_capacity 컬렉션을 사용하지 않으므로 업데이트 불가
+  // is_closed 기능이 필요하면 별도 컬렉션(예: daily_settings)에 저장 필요
+  console.warn('updateCapacity called but daily_capacity collection is not used. Updates ignored.')
 }
 
 /**
- * 주문 수 증가 (트랜잭션)
+ * 주문 수 증가 함수 제거됨
+ * orders 컬렉션에 주문이 추가되면 자동으로 계산됨
  */
-export async function incrementOrderCount(dates: string[]): Promise<void> {
-  if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
-    throw new Error('Firebase is not configured')
-  }
-
-  try {
-    const db = getDb()
-    const batch = writeBatch(db)
-
-    for (const dateStr of dates) {
-      const capacityRef = doc(db, 'daily_capacity', dateStr)
-      const capacitySnap = await getDoc(capacityRef)
-
-      if (capacitySnap.exists()) {
-        const data = capacitySnap.data()
-        const newCount = (data.current_order_count || 0) + 1
-        
-        batch.update(capacityRef, {
-          current_order_count: newCount,
-          updated_at: Timestamp.now(),
-        })
-      } else {
-        // 데이터가 없으면 생성
-        batch.set(capacityRef, {
-          date: dateStr,
-          max_capa: 30,
-          current_order_count: 1,
-          is_closed: false,
-          created_at: Timestamp.now(),
-          updated_at: Timestamp.now(),
-        })
-      }
-    }
-
-    await batch.commit()
-  } catch (error) {
-    console.error('Error incrementing order count:', error)
-    throw error
-  }
-}

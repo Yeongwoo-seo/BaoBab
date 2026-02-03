@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCapacities, updateCapacity, ensureNextWeekCapacity } from '@/lib/firebase/dailyCapacity'
+import { getCapacities, updateCapacity } from '@/lib/firebase/dailyCapacity'
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,9 +25,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(defaultCapacities)
     }
 
-    // 다음 주 데이터 자동 생성 확인
-    await ensureNextWeekCapacity()
-
+    // orders 컬렉션에서 직접 계산
     const capacities = await getCapacities(dates)
     return NextResponse.json(capacities)
   } catch (error: any) {
