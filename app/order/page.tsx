@@ -9,8 +9,6 @@ import Introduction from '@/components/Introduction'
 import ImportantNotice from '@/components/ImportantNotice'
 
 export default function OrderPage() {
-  const [isAgreed, setIsAgreed] = useState(false)
-
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -23,13 +21,13 @@ export default function OrderPage() {
 
           {/* 유의사항 섹션 */}
           <div className="bg-white rounded-card shadow-card p-4 sm:p-6 md:p-8">
-            <ImportantNotice onAgreementChange={setIsAgreed} />
+            <ImportantNotice />
           </div>
 
           {/* 주문 폼 섹션 */}
           <div className="bg-white rounded-card shadow-card p-4 sm:p-6 md:p-8">
             <Notice />
-            <OrderForm isAgreed={isAgreed} />
+            <OrderForm />
           </div>
         </div>
       </main>
