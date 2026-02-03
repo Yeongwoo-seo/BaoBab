@@ -15,7 +15,7 @@ export function formatPhoneNumber(value: string): string {
 
 export function getDayOfWeek(date: Date): '월' | '화' | '수' | '목' | '금' {
   const day = date.getDay()
-  const days: ('월' | '화' | '수' | '목' | '금')[] = ['일', '월', '화', '수', '목', '금', '토']
+  const days = ['일', '월', '화', '수', '목', '금', '토']
   return days[day] as '월' | '화' | '수' | '목' | '금'
 }
 
