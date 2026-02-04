@@ -8,6 +8,8 @@ import { formatDate, getNextWeekDates } from '@/lib/utils'
 export default function AdminDashboard() {
   const [summary, setSummary] = useState<WeeklySummary | null>(null)
   const [loading, setLoading] = useState(true)
+  const [updatingWeeklyOrders, setUpdatingWeeklyOrders] = useState(false)
+  const [updateMessage, setUpdateMessage] = useState<string | null>(null)
 
   useEffect(() => {
     fetchSummary()
@@ -24,6 +26,34 @@ export default function AdminDashboard() {
       console.error('Error fetching summary:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleAddNextWeekToWeeklyOrders = async () => {
+    if (!confirm('기존 정기 주문에 다음 주 날짜를 추가하시겠습니까?')) {
+      return
+    }
+
+    setUpdatingWeeklyOrders(true)
+    setUpdateMessage(null)
+
+    try {
+      const response = await fetch('/api/admin/add-next-week-to-weekly-orders', {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setUpdateMessage(`성공: ${data.ordersUpdated}개 주문, ${data.customerOrdersUpdated}개 고객 주문 업데이트 완료`)
+      } else {
+        setUpdateMessage(`오류: ${data.error || '알 수 없는 오류가 발생했습니다.'}`)
+      }
+    } catch (error: any) {
+      console.error('Error updating weekly orders:', error)
+      setUpdateMessage(`오류: ${error.message || '요청 중 오류가 발생했습니다.'}`)
+    } finally {
+      setUpdatingWeeklyOrders(false)
     }
   }
 
@@ -89,6 +119,29 @@ export default function AdminDashboard() {
                 {summary?.todayDelivery.easternCreek || 0}개
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* 관리 도구 */}
+        <div className="bg-white rounded-card shadow-card p-4 sm:p-6 mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">관리 도구</h2>
+          <div className="space-y-3">
+            <button
+              onClick={handleAddNextWeekToWeeklyOrders}
+              disabled={updatingWeeklyOrders}
+              className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-blue-500 text-white font-semibold rounded-card hover:bg-blue-600 active:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-center min-h-[44px] flex items-center justify-center"
+            >
+              {updatingWeeklyOrders ? '처리 중...' : '기존 정기 주문에 다음 주 날짜 추가'}
+            </button>
+            {updateMessage && (
+              <div className={`p-3 rounded-card text-sm ${
+                updateMessage.includes('성공') 
+                  ? 'bg-green-50 text-green-800 border border-green-200' 
+                  : 'bg-red-50 text-red-800 border border-red-200'
+              }`}>
+                {updateMessage}
+              </div>
+            )}
           </div>
         </div>
 
