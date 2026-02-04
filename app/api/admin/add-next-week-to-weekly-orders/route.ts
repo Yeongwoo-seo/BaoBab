@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/firebase'
 import { collection, getDocs, doc, updateDoc, writeBatch, Timestamp, query, where } from 'firebase/firestore'
+import { formatDate, getDayOfWeek } from '@/lib/utils'
 
 /**
  * 기존 정기 주문(is_weekly_order: true)의 날짜를 이번 주 + 다음 주만 남기고 나머지 삭제하는 API
@@ -49,39 +50,93 @@ export async function POST(request: NextRequest) {
         return // settlements가 없으면 스킵
       }
 
-      // 이번 주와 다음 주 범위 내의 날짜만 필터링
-      const validSettlements = settlements.filter((settlement: any) => {
+      // 기존 날짜들에서 요일 추출 (다음 주 날짜 기준)
+      const existingDates = new Set<string>()
+      const dayOfWeekMap = new Map<'월' | '화' | '수' | '목' | '금', Set<string>>()
+      
+      settlements.forEach((settlement: any) => {
         const dateStr = settlement.date
         if (!dateStr || typeof dateStr !== 'string') {
-          return false
+          return
         }
 
         const [year, month, day] = dateStr.split('-').map(Number)
         const settlementDate = new Date(year, month - 1, day)
         settlementDate.setHours(0, 0, 0, 0)
 
-        // 이번 주 월요일부터 다다음 주 금요일까지의 날짜만 유지
-        return settlementDate >= thisMonday && settlementDate <= weekAfterNextFriday
+        // 이번 주 월요일부터 다다음 주 금요일까지의 날짜만 고려
+        if (settlementDate >= thisMonday && settlementDate <= weekAfterNextFriday) {
+          existingDates.add(dateStr)
+          const dayOfWeek = getDayOfWeek(settlementDate)
+          if (!dayOfWeekMap.has(dayOfWeek)) {
+            dayOfWeekMap.set(dayOfWeek, new Set())
+          }
+          dayOfWeekMap.get(dayOfWeek)!.add(dateStr)
+        }
+      })
+
+      // 각 요일별로 이번 주, 다음 주, 다다음주 날짜 생성
+      const allDates = new Set<string>()
+      
+      dayOfWeekMap.forEach((dates, dayOfWeek) => {
+        // 다음 주 날짜 하나를 기준으로 사용 (기존에 있는 날짜 중 하나)
+        const referenceDateStr = Array.from(dates)[0]
+        if (!referenceDateStr) return
+
+        const [year, month, day] = referenceDateStr.split('-').map(Number)
+        const referenceDate = new Date(year, month - 1, day)
+        referenceDate.setHours(0, 0, 0, 0)
+
+        // 다음 주 월요일과의 차이 계산
+        const daysFromNextMonday = Math.floor((referenceDate.getTime() - nextMonday.getTime()) / (1000 * 60 * 60 * 24))
+        
+        // 이번 주, 다음 주, 다다음주 같은 요일 생성
+        for (let weekOffset = -1; weekOffset <= 1; weekOffset++) {
+          const targetDate = new Date(nextMonday)
+          targetDate.setDate(nextMonday.getDate() + daysFromNextMonday + (weekOffset * 7))
+          targetDate.setHours(0, 0, 0, 0)
+          
+          // 범위 내에 있는지 확인
+          if (targetDate >= thisMonday && targetDate <= weekAfterNextFriday) {
+            const formattedDate = formatDate(targetDate)
+            allDates.add(formattedDate)
+          }
+        }
+      })
+
+      // 기존 날짜도 포함
+      existingDates.forEach(date => allDates.add(date))
+
+      // settlements 배열 생성
+      const updatedSettlements: any[] = []
+      Array.from(allDates).sort().forEach((dateStr) => {
+        // 기존 settlement 정보 유지 (is_settled 등)
+        const existingSettlement = settlements.find((s: any) => s.date === dateStr)
+        if (existingSettlement) {
+          updatedSettlements.push(existingSettlement)
+        } else {
+          updatedSettlements.push({
+            date: dateStr,
+            is_settled: false,
+          })
+        }
       })
 
       // 변경사항이 있는지 확인
-      if (validSettlements.length === settlements.length) {
-        // 모든 날짜가 유효 범위 내에 있으면 스킵
-        return
-      }
+      const hasChanges = updatedSettlements.length !== settlements.length || 
+        !updatedSettlements.every((s, i) => settlements[i]?.date === s.date)
 
-      // 날짜순으로 정렬
-      validSettlements.sort((a: any, b: any) => {
-        return a.date.localeCompare(b.date)
-      })
+      if (!hasChanges) {
+        return // 변경사항 없음
+      }
 
       ordersToUpdate.push({
         id: orderDoc.id,
-        settlements: validSettlements,
+        settlements: updatedSettlements,
       })
       
       updatedCount++
-      console.log(`주문 ${orderDoc.id}: ${settlements.length}개 날짜 -> ${validSettlements.length}개 날짜 (${settlements.length - validSettlements.length}개 삭제)`)
+      console.log(`주문 ${orderDoc.id}: ${settlements.length}개 날짜 -> ${updatedSettlements.length}개 날짜`)
     })
 
     // 배치로 업데이트 (500개씩)
@@ -121,37 +176,83 @@ export async function POST(request: NextRequest) {
           return order
         }
 
-        // 이번 주와 다음 주 범위 내의 날짜만 필터링
-        const validSettlements = settlements.filter((settlement: any) => {
+        // 기존 날짜들에서 요일 추출
+        const existingDates = new Set<string>()
+        const dayOfWeekMap = new Map<'월' | '화' | '수' | '목' | '금', Set<string>>()
+        
+        settlements.forEach((settlement: any) => {
           const dateStr = settlement.date
           if (!dateStr || typeof dateStr !== 'string') {
-            return false
+            return
           }
 
           const [year, month, day] = dateStr.split('-').map(Number)
           const settlementDate = new Date(year, month - 1, day)
           settlementDate.setHours(0, 0, 0, 0)
 
-          // 이번 주 월요일부터 다다음 주 금요일까지의 날짜만 유지
-          return settlementDate >= thisMonday && settlementDate <= weekAfterNextFriday
+          if (settlementDate >= thisMonday && settlementDate <= weekAfterNextFriday) {
+            existingDates.add(dateStr)
+            const dayOfWeek = getDayOfWeek(settlementDate)
+            if (!dayOfWeekMap.has(dayOfWeek)) {
+              dayOfWeekMap.set(dayOfWeek, new Set())
+            }
+            dayOfWeekMap.get(dayOfWeek)!.add(dateStr)
+          }
         })
 
-        // 변경사항이 있는지 확인
-        if (validSettlements.length === settlements.length) {
-          return order // 변경사항 없음
+        // 각 요일별로 이번 주, 다음 주, 다다음주 날짜 생성
+        const allDates = new Set<string>()
+        
+        dayOfWeekMap.forEach((dates, dayOfWeek) => {
+          const referenceDateStr = Array.from(dates)[0]
+          if (!referenceDateStr) return
+
+          const [year, month, day] = referenceDateStr.split('-').map(Number)
+          const referenceDate = new Date(year, month - 1, day)
+          referenceDate.setHours(0, 0, 0, 0)
+
+          const daysFromNextMonday = Math.floor((referenceDate.getTime() - nextMonday.getTime()) / (1000 * 60 * 60 * 24))
+          
+          for (let weekOffset = -1; weekOffset <= 1; weekOffset++) {
+            const targetDate = new Date(nextMonday)
+            targetDate.setDate(nextMonday.getDate() + daysFromNextMonday + (weekOffset * 7))
+            targetDate.setHours(0, 0, 0, 0)
+            
+            if (targetDate >= thisMonday && targetDate <= weekAfterNextFriday) {
+              const formattedDate = formatDate(targetDate)
+              allDates.add(formattedDate)
+            }
+          }
+        })
+
+        existingDates.forEach(date => allDates.add(date))
+
+        const updatedSettlements: any[] = []
+        Array.from(allDates).sort().forEach((dateStr) => {
+          const existingSettlement = settlements.find((s: any) => s.date === dateStr)
+          if (existingSettlement) {
+            updatedSettlements.push(existingSettlement)
+          } else {
+            updatedSettlements.push({
+              date: dateStr,
+              is_settled: false,
+            })
+          }
+        })
+
+        const hasOrderChanges = updatedSettlements.length !== settlements.length || 
+          !updatedSettlements.every((s, i) => settlements[i]?.date === s.date)
+
+        if (!hasOrderChanges) {
+          return order
         }
-
-        // 날짜순으로 정렬
-        validSettlements.sort((a: any, b: any) => {
-          return a.date.localeCompare(b.date)
-        })
 
         hasChanges = true
         customerUpdatedCount++
         
         return {
           ...order,
-          settlements: validSettlements,
+          settlements: updatedSettlements,
         }
       })
 
