@@ -84,17 +84,35 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
   // 4. 주문 생성
   const ordersRef = collection(db, 'orders')
   
+  // 날짜 유효성 검증 및 정리
+  const validOrderDates = data.orderDates.filter(date => {
+    // 날짜 형식 검증 (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+    if (!dateRegex.test(date)) {
+      console.warn(`Invalid date format: ${date}, skipping`)
+      return false
+    }
+    return true
+  })
+  
+  if (validOrderDates.length === 0) {
+    throw new Error('유효한 주문 날짜가 없습니다.')
+  }
+  
   // 각 주문 날짜별로 정산 정보 초기화 (settlements 배열이 order_dates 역할도 함)
-  // 정기 주문일 때도 모든 날짜(재고 부족 제외된 날짜 포함)에 대해 settlements 생성
-  const settlements: OrderSettlement[] = data.orderDates.map((date) => ({
+  const settlements: OrderSettlement[] = validOrderDates.map((date) => ({
     date,
     is_settled: false,
   }))
   
-  // 정기 주문인 경우 로그 출력 (디버깅용)
-  if (data.is_weekly_order) {
-    console.log(`정기 주문 생성: ${settlements.length}개 날짜에 대한 settlements 생성됨`)
-  }
+  // 디버깅 로그
+  console.log('주문 생성 데이터:', {
+    orderDates: data.orderDates,
+    validOrderDates: validOrderDates,
+    settlementsCount: settlements.length,
+    is_weekly_order: data.is_weekly_order,
+    settlements: settlements.slice(0, 5), // 처음 5개만 로그
+  })
 
   const orderData: any = {
     customer_name: data.name,
@@ -118,7 +136,15 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
   }
 
     const orderRef = await addDoc(ordersRef, orderData)
-    console.log('Order document created:', orderRef.id)
+    console.log('Order document created:', {
+      orderId: orderRef.id,
+      settlementsCount: settlements.length,
+      settlements: settlements.slice(0, 5), // 처음 5개만 로그
+      orderData: {
+        ...orderData,
+        settlements: orderData.settlements.slice(0, 3), // 처음 3개만 로그
+      }
+    })
 
     return {
       id: orderRef.id,

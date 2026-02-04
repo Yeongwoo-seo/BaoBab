@@ -67,16 +67,32 @@ export function getWeeklyRecurringDates(selectedDates: string[], weeksAhead: num
   
   // 선택된 날짜들부터 시작
   selectedDates.forEach((dateStr) => {
-    const date = new Date(dateStr)
+    // 날짜 문자열을 파싱 (YYYY-MM-DD 형식)
+    const [year, month, day] = dateStr.split('-').map(Number)
+    const date = new Date(year, month - 1, day) // 월은 0부터 시작
+    
+    // 유효한 날짜인지 확인
+    if (isNaN(date.getTime())) {
+      console.warn(`Invalid date: ${dateStr}, skipping`)
+      return
+    }
     
     // 0주차부터 weeksAhead주차까지 생성
     for (let week = 0; week <= weeksAhead; week++) {
       const recurringDate = new Date(date)
       recurringDate.setDate(date.getDate() + (week * 7))
-      allDates.push(formatDate(recurringDate))
+      const formattedDate = formatDate(recurringDate)
+      allDates.push(formattedDate)
     }
   })
   
   // 중복 제거 및 정렬
-  return [...new Set(allDates)].sort()
+  const uniqueDates = [...new Set(allDates)].sort()
+  console.log('정기 주문 날짜 생성:', {
+    selectedDates,
+    weeksAhead,
+    totalDates: uniqueDates.length,
+    firstFew: uniqueDates.slice(0, 5),
+  })
+  return uniqueDates
 }
