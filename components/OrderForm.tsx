@@ -309,7 +309,7 @@ export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps
               className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
             />
             <span className="text-xs sm:text-sm text-gray-700">
-              매주 먹을 거다
+              매주 정기 주문하기
             </span>
           </label>
         </div>
