@@ -85,10 +85,16 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
   const ordersRef = collection(db, 'orders')
   
   // 각 주문 날짜별로 정산 정보 초기화 (settlements 배열이 order_dates 역할도 함)
+  // 정기 주문일 때도 모든 날짜(재고 부족 제외된 날짜 포함)에 대해 settlements 생성
   const settlements: OrderSettlement[] = data.orderDates.map((date) => ({
     date,
     is_settled: false,
   }))
+  
+  // 정기 주문인 경우 로그 출력 (디버깅용)
+  if (data.is_weekly_order) {
+    console.log(`정기 주문 생성: ${settlements.length}개 날짜에 대한 settlements 생성됨`)
+  }
 
   const orderData: any = {
     customer_name: data.name,
