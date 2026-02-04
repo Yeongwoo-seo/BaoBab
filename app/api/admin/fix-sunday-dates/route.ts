@@ -17,8 +17,7 @@ export async function POST(request: NextRequest) {
     const ordersSnapshot = await getDocs(ordersRef)
 
     let fixedCount = 0
-    const batch = writeBatch(db)
-    let batchCount = 0
+    const ordersToUpdate: Array<{ id: string; settlements: any[] }> = []
 
     ordersSnapshot.forEach((orderDoc) => {
       const orderData = orderDoc.data()
@@ -33,6 +32,7 @@ export async function POST(request: NextRequest) {
         // 날짜 문자열 파싱 (YYYY-MM-DD)
         const [year, month, day] = dateStr.split('-').map(Number)
         const date = new Date(year, month - 1, day)
+        date.setHours(0, 0, 0, 0) // 시간을 0으로 설정
         const dayOfWeek = date.getDay() // 0 = 일요일, 5 = 금요일
 
         // 일요일(0)인 경우 금요일(5)로 변경 (2일 전)
@@ -59,22 +59,26 @@ export async function POST(request: NextRequest) {
       })
 
       if (hasChanges) {
-        const orderRef = doc(db, 'orders', orderDoc.id)
-        batch.update(orderRef, {
+        ordersToUpdate.push({
+          id: orderDoc.id,
           settlements: updatedSettlements,
-          updated_at: Timestamp.now(),
         })
-        batchCount++
-
-        // Firestore 배치 제한 (500개)
-        if (batchCount >= 500) {
-          return // 배치가 가득 찼으므로 여기서 중단
-        }
       }
     })
 
-    // 배치 커밋
-    if (batchCount > 0) {
+    // 배치로 업데이트 (500개씩)
+    for (let i = 0; i < ordersToUpdate.length; i += 500) {
+      const batch = writeBatch(db)
+      const batchOrders = ordersToUpdate.slice(i, i + 500)
+      
+      batchOrders.forEach((order) => {
+        const orderRef = doc(db, 'orders', order.id)
+        batch.update(orderRef, {
+          settlements: order.settlements,
+          updated_at: Timestamp.now(),
+        })
+      })
+      
       await batch.commit()
     }
 
@@ -82,8 +86,7 @@ export async function POST(request: NextRequest) {
     const customerRef = collection(db, 'customer')
     const customerSnapshot = await getDocs(customerRef)
     let customerFixedCount = 0
-    const customerBatch = writeBatch(db)
-    let customerBatchCount = 0
+    const customersToUpdate: Array<{ id: string; orders: any[] }> = []
 
     customerSnapshot.forEach((customerDoc) => {
       const customerData = customerDoc.data()
@@ -102,6 +105,7 @@ export async function POST(request: NextRequest) {
 
           const [year, month, day] = dateStr.split('-').map(Number)
           const date = new Date(year, month - 1, day)
+          date.setHours(0, 0, 0, 0) // 시간을 0으로 설정
           const dayOfWeek = date.getDay()
 
           if (dayOfWeek === 0) {
@@ -138,20 +142,26 @@ export async function POST(request: NextRequest) {
       })
 
       if (hasChanges) {
-        const customerDocRef = doc(db, 'customer', customerDoc.id)
-        customerBatch.update(customerDocRef, {
+        customersToUpdate.push({
+          id: customerDoc.id,
           orders: updatedOrders,
-          updated_at: Timestamp.now(),
         })
-        customerBatchCount++
-
-        if (customerBatchCount >= 500) {
-          return
-        }
       }
     })
 
-    if (customerBatchCount > 0) {
+    // 배치로 업데이트 (500개씩)
+    for (let i = 0; i < customersToUpdate.length; i += 500) {
+      const customerBatch = writeBatch(db)
+      const batchCustomers = customersToUpdate.slice(i, i + 500)
+      
+      batchCustomers.forEach((customer) => {
+        const customerDocRef = doc(db, 'customer', customer.id)
+        customerBatch.update(customerDocRef, {
+          orders: customer.orders,
+          updated_at: Timestamp.now(),
+        })
+      })
+      
       await customerBatch.commit()
     }
 
