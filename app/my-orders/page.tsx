@@ -3,15 +3,17 @@
 import { useState } from 'react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
-import { Order } from '@/types'
-import { formatPhoneNumber, getDayOfWeek } from '@/lib/utils'
+import { Order, Customer } from '@/types'
+import { formatPhoneNumber, getDayOfWeek, getWeeklyOrderDays } from '@/lib/utils'
 
 export default function MyOrdersPage() {
   const [contact, setContact] = useState('')
   const [orders, setOrders] = useState<Order[]>([])
+  const [customer, setCustomer] = useState<Customer | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [hasSearched, setHasSearched] = useState(false)
+  const [cancelModal, setCancelModal] = useState<{ orderId: string; date: string; dayOfWeek: string } | null>(null)
 
   const handleContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhoneNumber(e.target.value)
@@ -76,6 +78,40 @@ export default function MyOrdersPage() {
     }
   }
 
+  const handleCancelDate = (orderId: string, date: string) => {
+    const dayOfWeek = getDayOfWeek(new Date(date))
+    setCancelModal({ orderId, date, dayOfWeek: dayOfWeek || '' })
+  }
+
+  const handleConfirmCancelDate = async (cancelAllWeekly: boolean) => {
+    if (!cancelModal) return
+
+    try {
+      const response = await fetch(`/api/orders/${cancelModal.orderId}/cancel-date`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: cancelModal.date,
+          cancelAllWeekly: cancelAllWeekly,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '날짜 취소 중 오류가 발생했습니다.')
+      }
+
+      // 주문 목록 새로고침
+      handleSearch()
+      setCancelModal(null)
+      alert(cancelAllWeekly ? '해당 요일의 모든 주문이 취소되었습니다.' : '해당 날짜의 주문이 취소되었습니다.')
+    } catch (err: any) {
+      console.error('Error canceling date:', err)
+      alert(err.message || '날짜 취소 중 오류가 발생했습니다.')
+    }
+  }
+
   const formatOrderDate = (dateStr: string) => {
     const date = new Date(dateStr)
     const month = date.getMonth() + 1
@@ -135,6 +171,37 @@ export default function MyOrdersPage() {
 
           {orders.length > 0 && (
             <>
+              {/* 정기 주문 여부 */}
+              {customer && customer.orders && customer.orders.length > 0 && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-card">
+                  <p className="text-xs sm:text-sm font-medium text-gray-900 mb-2">정기 주문 여부</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(['월', '화', '수', '목', '금'] as const).map((day) => {
+                      const weeklyDays = getWeeklyOrderDays(customer.orders || [])
+                      const isChecked = weeklyDays.has(day)
+                      return (
+                        <label
+                          key={day}
+                          className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs sm:text-sm cursor-pointer ${
+                            isChecked
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-gray-100 text-gray-500'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            disabled
+                            className="w-3 h-3"
+                          />
+                          {day}
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="mb-4 text-xs sm:text-sm text-gray-600">
                 총 {orders.length}건의 주문 내역이 있습니다.
               </div>
@@ -203,14 +270,30 @@ export default function MyOrdersPage() {
                         <td className="px-4 py-3 text-xs sm:text-sm text-gray-900">{order.location}</td>
                         <td className="px-4 py-3 text-xs sm:text-sm text-gray-900">
                           <div className="flex flex-wrap gap-1.5">
-                            {order.settlements?.map((settlement) => (
-                              <span
-                                key={settlement.date}
-                                className="inline-block px-2 py-1 bg-gray-50 text-gray-700 rounded text-xs"
-                              >
-                                {formatOrderDate(settlement.date)}
-                              </span>
-                            ))}
+                            {order.settlements?.map((settlement) => {
+                              const isWeeklyDay = customer?.orders?.some(co => 
+                                co.is_weekly_order && 
+                                co.settlements.some(s => {
+                                  const sDay = getDayOfWeek(new Date(s.date))
+                                  const settlementDay = getDayOfWeek(new Date(settlement.date))
+                                  return sDay === settlementDay
+                                })
+                              )
+                              return (
+                                <div key={settlement.date} className="relative inline-flex items-center gap-1">
+                                  <span className="inline-block px-2 py-1 bg-gray-50 text-gray-700 rounded text-xs">
+                                    {formatOrderDate(settlement.date)}
+                                  </span>
+                                  <button
+                                    onClick={() => handleCancelDate(order.id, settlement.date)}
+                                    className="text-red-500 hover:text-red-700 text-xs font-bold"
+                                    title="날짜 취소"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              )
+                            })}
                           </div>
                         </td>
                         <td className="px-4 py-3 text-xs sm:text-sm text-gray-900">
@@ -230,6 +313,67 @@ export default function MyOrdersPage() {
                 </table>
               </div>
             </>
+          )}
+
+          {/* 날짜 취소 모달 */}
+          {cancelModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-card p-6 max-w-md w-full">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">날짜 취소</h3>
+                <p className="text-sm text-gray-700 mb-6">
+                  {formatOrderDate(cancelModal.date)} 날짜를 취소하시겠습니까?
+                </p>
+                
+                {customer?.orders?.some(co => 
+                  co.is_weekly_order && 
+                  co.settlements.some(s => {
+                    const sDay = getDayOfWeek(new Date(s.date))
+                    const cancelDay = getDayOfWeek(new Date(cancelModal.date))
+                    return sDay === cancelDay
+                  })
+                ) && (
+                  <div className="mb-6 space-y-3">
+                    <button
+                      onClick={() => handleConfirmCancelDate(false)}
+                      className="w-full px-4 py-2 bg-red-500 text-white rounded-card hover:bg-red-600 transition-colors text-sm"
+                    >
+                      그날만 취소
+                    </button>
+                    <button
+                      onClick={() => handleConfirmCancelDate(true)}
+                      className="w-full px-4 py-2 bg-red-600 text-white rounded-card hover:bg-red-700 transition-colors text-sm"
+                    >
+                      {cancelModal.dayOfWeek}요일 계속 취소
+                    </button>
+                  </div>
+                )}
+                
+                {!customer?.orders?.some(co => 
+                  co.is_weekly_order && 
+                  co.settlements.some(s => {
+                    const sDay = getDayOfWeek(new Date(s.date))
+                    const cancelDay = getDayOfWeek(new Date(cancelModal.date))
+                    return sDay === cancelDay
+                  })
+                ) && (
+                  <div className="mb-6">
+                    <button
+                      onClick={() => handleConfirmCancelDate(false)}
+                      className="w-full px-4 py-2 bg-red-500 text-white rounded-card hover:bg-red-600 transition-colors text-sm"
+                    >
+                      취소하기
+                    </button>
+                  </div>
+                )}
+                
+                <button
+                  onClick={() => setCancelModal(null)}
+                  className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-card hover:bg-gray-300 transition-colors text-sm"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </main>

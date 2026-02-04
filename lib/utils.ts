@@ -19,6 +19,40 @@ export function getDayOfWeek(date: Date): '월' | '화' | '수' | '목' | '금' 
   return days[day] as '월' | '화' | '수' | '목' | '금'
 }
 
+/**
+ * 날짜 문자열에서 요일 추출
+ */
+export function getDayOfWeekFromDate(dateStr: string): '월' | '화' | '수' | '목' | '금' | null {
+  try {
+    const [year, month, day] = dateStr.split('-').map(Number)
+    const date = new Date(year, month - 1, day)
+    if (isNaN(date.getTime())) return null
+    return getDayOfWeek(date)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 정기 주문에서 사용되는 요일들 추출
+ */
+export function getWeeklyOrderDays(orders: { settlements: { date: string }[], is_weekly_order: boolean }[]): Set<'월' | '화' | '수' | '목' | '금'> {
+  const days = new Set<'월' | '화' | '수' | '목' | '금'>()
+  
+  orders.forEach(order => {
+    if (order.is_weekly_order) {
+      order.settlements.forEach(settlement => {
+        const day = getDayOfWeekFromDate(settlement.date)
+        if (day) {
+          days.add(day)
+        }
+      })
+    }
+  })
+  
+  return days
+}
+
 export function getNextWeekDates(): Date[] {
   const dates: Date[] = []
   const today = new Date()
