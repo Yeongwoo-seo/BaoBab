@@ -30,7 +30,7 @@ export default function AdminDashboard() {
   }
 
   const handleAddNextWeekToWeeklyOrders = async () => {
-    if (!confirm('기존 정기 주문에 다음 주 날짜를 추가하시겠습니까?')) {
+    if (!confirm('정기 주문에서 이번 주 날짜를 삭제하고 다음 주와 다다음주 날짜만 남기시겠습니까?')) {
       return
     }
 
