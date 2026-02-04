@@ -19,12 +19,19 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
     console.log('Firebase connected, creating order...')
 
     // 재고 확인: orders 컬렉션에서 날짜별 주문 건수 확인
+    console.log('주문 생성 시작:', {
+      orderDates: data.orderDates,
+      orderDatesCount: data.orderDates.length,
+      is_weekly_order: data.is_weekly_order,
+    })
+    
     const { getCapacities } = await import('./dailyCapacity')
     const capacities = await getCapacities(data.orderDates)
     
-    console.log('재고 확인:', {
+    console.log('재고 확인 결과:', {
       orderDates: data.orderDates,
-      capacities: capacities.map(c => ({ date: c.date, count: c.current_order_count, max: c.max_capa })),
+      capacitiesCount: capacities.length,
+      capacities: capacities.map(c => ({ date: c.date, count: c.current_order_count, max: c.max_capa, available: c.current_order_count < c.max_capa })),
     })
     
     // 재고 부족 확인 (정기 주문의 경우 일부 날짜만 재고 부족해도 경고만 표시)
@@ -32,11 +39,10 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
     for (const capacity of capacities) {
       if (capacity.current_order_count >= capacity.max_capa) {
         console.warn(`재고 부족: ${capacity.date} (${capacity.current_order_count}/${capacity.max_capa})`)
-        if (data.is_weekly_order) {
-          // 정기 주문의 경우 재고 부족한 날짜는 제외하고 계속 진행
-          unavailableDates.push(capacity.date)
-        } else {
-          // 일반 주문의 경우 재고 부족하면 에러
+        unavailableDates.push(capacity.date)
+        
+        // 일반 주문의 경우 재고 부족하면 에러
+        if (!data.is_weekly_order) {
           throw new Error(`${capacity.date} 날짜는 재고가 부족합니다. (${capacity.current_order_count}/${capacity.max_capa})`)
         }
       }
@@ -51,6 +57,11 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
         throw new Error('선택하신 요일들이 모두 재고가 부족합니다.')
       }
     }
+    
+    console.log('재고 확인 완료, 주문 진행:', {
+      finalOrderDates: data.orderDates,
+      finalOrderDatesCount: data.orderDates.length,
+    })
 
     // 고객 정보 확인 또는 생성
   const customerRef = collection(db, 'customer')
@@ -93,17 +104,26 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
   const ordersRef = collection(db, 'orders')
   
   // 날짜 유효성 검증 및 정리
+  console.log('날짜 검증 시작:', { orderDates: data.orderDates })
+  
   const validOrderDates = data.orderDates.filter(date => {
     // 날짜 형식 검증 (YYYY-MM-DD)
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/
-    if (!dateRegex.test(date)) {
+    const isValid = dateRegex.test(date)
+    if (!isValid) {
       console.warn(`Invalid date format: ${date}, skipping`)
-      return false
     }
-    return true
+    return isValid
+  })
+  
+  console.log('날짜 검증 결과:', {
+    originalCount: data.orderDates.length,
+    validCount: validOrderDates.length,
+    validDates: validOrderDates.slice(0, 5),
   })
   
   if (validOrderDates.length === 0) {
+    console.error('유효한 주문 날짜가 없습니다:', { orderDates: data.orderDates })
     throw new Error('유효한 주문 날짜가 없습니다.')
   }
   
@@ -114,7 +134,7 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
   }))
   
   // 디버깅 로그
-  console.log('주문 생성 데이터:', {
+  console.log('주문 생성 데이터 준비 완료:', {
     orderDates: data.orderDates,
     validOrderDates: validOrderDates,
     settlementsCount: settlements.length,
@@ -143,14 +163,23 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
     orderData.allergies = data.allergies
   }
 
+    console.log('Firebase에 주문 저장 시도:', {
+      orderDataKeys: Object.keys(orderData),
+      settlementsCount: orderData.settlements.length,
+      customerId: orderData.customer_id,
+    })
+    
     const orderRef = await addDoc(ordersRef, orderData)
-    console.log('Order document created:', {
+    
+    console.log('✅ Order document created successfully:', {
       orderId: orderRef.id,
       settlementsCount: settlements.length,
       settlements: settlements.slice(0, 5), // 처음 5개만 로그
       orderData: {
-        ...orderData,
-        settlements: orderData.settlements.slice(0, 3), // 처음 3개만 로그
+        customer_name: orderData.customer_name,
+        contact: orderData.contact,
+        location: orderData.location,
+        settlementsCount: orderData.settlements.length,
       }
     })
 

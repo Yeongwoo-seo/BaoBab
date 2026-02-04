@@ -179,12 +179,19 @@ export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || '주문 처리 중 오류가 발생했습니다.')
+        const errorData = await response.json()
+        console.error('주문 생성 실패:', {
+          status: response.status,
+          error: errorData,
+        })
+        throw new Error(errorData.error || '주문 처리 중 오류가 발생했습니다.')
       }
 
+      const result = await response.json()
+      console.log('주문 생성 성공:', result)
       router.push('/order/success')
     } catch (err: any) {
+      console.error('주문 생성 에러:', err)
       setError(err.message || '주문 처리 중 오류가 발생했습니다.')
     } finally {
       setLoading(false)
