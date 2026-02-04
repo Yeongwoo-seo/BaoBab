@@ -28,20 +28,15 @@ export async function POST(request: NextRequest) {
     nextMonday.setDate(today.getDate() + daysUntilMonday)
     nextMonday.setHours(0, 0, 0, 0)
     
-    // 다음 주 금요일 계산 (다음 주 월요일 + 4일)
-    const nextFriday = new Date(nextMonday)
-    nextFriday.setDate(nextMonday.getDate() + 4)
-    nextFriday.setHours(0, 0, 0, 0)
+    // 다다음 주 금요일 계산 (다음 주 월요일 + 11일 = 다다음 주 금요일)
+    const weekAfterNextFriday = new Date(nextMonday)
+    weekAfterNextFriday.setDate(nextMonday.getDate() + 11) // 월요일 + 11일 = 다다음 주 금요일
+    weekAfterNextFriday.setHours(0, 0, 0, 0)
     
     // 이번 주 월요일 계산 (다음 주 월요일 - 7일)
     const thisMonday = new Date(nextMonday)
     thisMonday.setDate(nextMonday.getDate() - 7)
     thisMonday.setHours(0, 0, 0, 0)
-    
-    // 이번 주 금요일 계산
-    const thisFriday = new Date(thisMonday)
-    thisFriday.setDate(thisMonday.getDate() + 4)
-    thisFriday.setHours(0, 0, 0, 0)
 
     let updatedCount = 0
     const ordersToUpdate: Array<{ id: string; settlements: any[] }> = []
@@ -65,8 +60,8 @@ export async function POST(request: NextRequest) {
         const settlementDate = new Date(year, month - 1, day)
         settlementDate.setHours(0, 0, 0, 0)
 
-        // 이번 주 월요일부터 다음 주 금요일까지의 날짜만 유지
-        return settlementDate >= thisMonday && settlementDate <= nextFriday
+        // 이번 주 월요일부터 다다음 주 금요일까지의 날짜만 유지
+        return settlementDate >= thisMonday && settlementDate <= weekAfterNextFriday
       })
 
       // 변경사항이 있는지 확인
@@ -137,8 +132,8 @@ export async function POST(request: NextRequest) {
           const settlementDate = new Date(year, month - 1, day)
           settlementDate.setHours(0, 0, 0, 0)
 
-          // 이번 주 월요일부터 다음 주 금요일까지의 날짜만 유지
-          return settlementDate >= thisMonday && settlementDate <= nextFriday
+          // 이번 주 월요일부터 다다음 주 금요일까지의 날짜만 유지
+          return settlementDate >= thisMonday && settlementDate <= weekAfterNextFriday
         })
 
         // 변경사항이 있는지 확인
@@ -185,7 +180,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: '기존 정기 주문을 이번 주 + 다음 주 날짜만 남기고 나머지 삭제 완료',
+      message: '기존 정기 주문을 이번 주 + 다음 주 + 다다음 주 날짜만 남기고 나머지 삭제 완료',
       ordersUpdated: updatedCount,
       customerOrdersUpdated: customerUpdatedCount,
       totalUpdated: updatedCount + customerUpdatedCount,
