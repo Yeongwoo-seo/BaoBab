@@ -58,9 +58,9 @@ export function getDateFromDayOfWeek(dayOfWeek: '월' | '화' | '수' | '목' | 
 /**
  * 선택된 날짜들의 요일을 기반으로 여러 주 앞의 같은 요일들의 날짜를 반환
  * @param selectedDates 선택된 날짜들
- * @param weeksAhead 몇 주 앞까지 생성할지 (기본값: 8주 = 2개월)
+ * @param weeksAhead 몇 주 앞까지 생성할지 (기본값: 1주 = 다음 주)
  */
-export function getWeeklyRecurringDates(selectedDates: string[], weeksAhead: number = 8): string[] {
+export function getWeeklyRecurringDates(selectedDates: string[], weeksAhead: number = 1): string[] {
   if (selectedDates.length === 0) return []
   
   const allDates: string[] = []
@@ -88,11 +88,5 @@ export function getWeeklyRecurringDates(selectedDates: string[], weeksAhead: num
   
   // 중복 제거 및 정렬
   const uniqueDates = [...new Set(allDates)].sort()
-  console.log('정기 주문 날짜 생성:', {
-    selectedDates,
-    weeksAhead,
-    totalDates: uniqueDates.length,
-    firstFew: uniqueDates.slice(0, 5),
-  })
   return uniqueDates
 }

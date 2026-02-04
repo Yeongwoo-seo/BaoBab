@@ -157,11 +157,11 @@ export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps
 
     setLoading(true)
     try {
-      // 매주 정기 주문이면 8주치(2개월) 같은 요일들을 모두 포함
+      // 매주 정기 주문이면 다음 주까지만 자동 생성
       let allOrderDates = [...selectedDates]
       if (isWeeklyOrder) {
-        // 8주치를 미리 생성 (총 9주치: 이번 주 + 다음 8주)
-        allOrderDates = getWeeklyRecurringDates(selectedDates, 8)
+        // 다음 주까지만 생성 (총 2주치: 이번 주 + 다음 주)
+        allOrderDates = getWeeklyRecurringDates(selectedDates, 1)
       }
 
       const response = await fetch('/api/orders', {
