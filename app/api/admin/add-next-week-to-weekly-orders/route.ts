@@ -22,22 +22,17 @@ export async function POST(request: NextRequest) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     
-    // 다음 주 월요일 계산
+    // 다음 주 월요일 계산 (시작 날짜)
     const dayOfWeek = today.getDay()
     const daysUntilMonday = (8 - dayOfWeek) % 7 || 7
     const nextMonday = new Date(today)
     nextMonday.setDate(today.getDate() + daysUntilMonday)
     nextMonday.setHours(0, 0, 0, 0)
     
-    // 다다음 주 금요일 계산 (다음 주 월요일 + 11일 = 다다음 주 금요일)
+    // 다다음 주 금요일 계산 (끝 날짜) - 다음 주 월요일 + 11일 = 다다음 주 금요일
     const weekAfterNextFriday = new Date(nextMonday)
-    weekAfterNextFriday.setDate(nextMonday.getDate() + 11) // 월요일 + 11일 = 다다음 주 금요일
+    weekAfterNextFriday.setDate(nextMonday.getDate() + 11)
     weekAfterNextFriday.setHours(0, 0, 0, 0)
-    
-    // 이번 주 월요일 계산 (다음 주 월요일 - 7일)
-    const thisMonday = new Date(nextMonday)
-    thisMonday.setDate(nextMonday.getDate() - 7)
-    thisMonday.setHours(0, 0, 0, 0)
 
     let updatedCount = 0
     const ordersToUpdate: Array<{ id: string; settlements: any[] }> = []
@@ -64,8 +59,8 @@ export async function POST(request: NextRequest) {
         const settlementDate = new Date(year, month - 1, day)
         settlementDate.setHours(0, 0, 0, 0)
 
-        // 이번 주 월요일부터 다다음 주 금요일까지의 날짜만 고려
-        if (settlementDate >= thisMonday && settlementDate <= weekAfterNextFriday) {
+        // 다음 주 월요일부터 다다음 주 금요일까지의 날짜만 고려 (이번 주 제외)
+        if (settlementDate >= nextMonday && settlementDate <= weekAfterNextFriday) {
           existingDates.add(dateStr)
           const dayOfWeek = getDayOfWeek(settlementDate)
           if (!dayOfWeekMap.has(dayOfWeek)) {
@@ -88,20 +83,20 @@ export async function POST(request: NextRequest) {
         referenceDate.setHours(0, 0, 0, 0)
 
         // 다음 주 월요일과의 차이 계산
-        const daysFromNextMonday = Math.floor((referenceDate.getTime() - nextMonday.getTime()) / (1000 * 60 * 60 * 24))
-        
-        // 이번 주, 다음 주, 다다음주 같은 요일 생성
-        for (let weekOffset = -1; weekOffset <= 1; weekOffset++) {
-          const targetDate = new Date(nextMonday)
-          targetDate.setDate(nextMonday.getDate() + daysFromNextMonday + (weekOffset * 7))
-          targetDate.setHours(0, 0, 0, 0)
+          const daysFromNextMonday = Math.floor((referenceDate.getTime() - nextMonday.getTime()) / (1000 * 60 * 60 * 24))
           
-          // 범위 내에 있는지 확인
-          if (targetDate >= thisMonday && targetDate <= weekAfterNextFriday) {
-            const formattedDate = formatDate(targetDate)
-            allDates.add(formattedDate)
+          // 다음 주, 다다음주 같은 요일 생성 (이번 주 제외)
+          for (let weekOffset = 0; weekOffset <= 1; weekOffset++) {
+            const targetDate = new Date(nextMonday)
+            targetDate.setDate(nextMonday.getDate() + daysFromNextMonday + (weekOffset * 7))
+            targetDate.setHours(0, 0, 0, 0)
+            
+            // 범위 내에 있는지 확인
+            if (targetDate >= nextMonday && targetDate <= weekAfterNextFriday) {
+              const formattedDate = formatDate(targetDate)
+              allDates.add(formattedDate)
+            }
           }
-        }
       })
 
       // 기존 날짜도 포함
@@ -190,7 +185,8 @@ export async function POST(request: NextRequest) {
           const settlementDate = new Date(year, month - 1, day)
           settlementDate.setHours(0, 0, 0, 0)
 
-          if (settlementDate >= thisMonday && settlementDate <= weekAfterNextFriday) {
+          // 다음 주 월요일부터 다다음 주 금요일까지의 날짜만 고려 (이번 주 제외)
+          if (settlementDate >= nextMonday && settlementDate <= weekAfterNextFriday) {
             existingDates.add(dateStr)
             const dayOfWeek = getDayOfWeek(settlementDate)
             if (!dayOfWeekMap.has(dayOfWeek)) {
@@ -213,12 +209,13 @@ export async function POST(request: NextRequest) {
 
           const daysFromNextMonday = Math.floor((referenceDate.getTime() - nextMonday.getTime()) / (1000 * 60 * 60 * 24))
           
-          for (let weekOffset = -1; weekOffset <= 1; weekOffset++) {
+          // 다음 주, 다다음주 같은 요일 생성 (이번 주 제외)
+          for (let weekOffset = 0; weekOffset <= 1; weekOffset++) {
             const targetDate = new Date(nextMonday)
             targetDate.setDate(nextMonday.getDate() + daysFromNextMonday + (weekOffset * 7))
             targetDate.setHours(0, 0, 0, 0)
             
-            if (targetDate >= thisMonday && targetDate <= weekAfterNextFriday) {
+            if (targetDate >= nextMonday && targetDate <= weekAfterNextFriday) {
               const formattedDate = formatDate(targetDate)
               allDates.add(formattedDate)
             }
@@ -281,7 +278,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: '기존 정기 주문을 이번 주 + 다음 주 + 다다음 주 날짜만 남기고 나머지 삭제 완료',
+      message: '기존 정기 주문을 다음 주 + 다다음 주 날짜만 남기고 나머지 삭제 완료',
       ordersUpdated: updatedCount,
       customerOrdersUpdated: customerUpdatedCount,
       totalUpdated: updatedCount + customerUpdatedCount,
