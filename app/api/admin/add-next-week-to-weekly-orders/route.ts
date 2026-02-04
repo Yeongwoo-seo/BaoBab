@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/firebase'
 import { collection, getDocs, doc, updateDoc, writeBatch, Timestamp, query, where } from 'firebase/firestore'
-import { getWeeklyRecurringDates } from '@/lib/utils'
 
 /**
- * 기존 정기 주문(is_weekly_order: true)에 다음 주 날짜를 추가하는 API
+ * 기존 정기 주문(is_weekly_order: true)의 날짜를 이번 주 + 다음 주만 남기고 나머지 삭제하는 API
  */
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +18,31 @@ export async function POST(request: NextRequest) {
     const ordersQuery = query(ordersRef, where('is_weekly_order', '==', true))
     const ordersSnapshot = await getDocs(ordersQuery)
 
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    // 다음 주 월요일 계산
+    const dayOfWeek = today.getDay()
+    const daysUntilMonday = (8 - dayOfWeek) % 7 || 7
+    const nextMonday = new Date(today)
+    nextMonday.setDate(today.getDate() + daysUntilMonday)
+    nextMonday.setHours(0, 0, 0, 0)
+    
+    // 다음 주 금요일 계산 (다음 주 월요일 + 4일)
+    const nextFriday = new Date(nextMonday)
+    nextFriday.setDate(nextMonday.getDate() + 4)
+    nextFriday.setHours(0, 0, 0, 0)
+    
+    // 이번 주 월요일 계산 (다음 주 월요일 - 7일)
+    const thisMonday = new Date(nextMonday)
+    thisMonday.setDate(nextMonday.getDate() - 7)
+    thisMonday.setHours(0, 0, 0, 0)
+    
+    // 이번 주 금요일 계산
+    const thisFriday = new Date(thisMonday)
+    thisFriday.setDate(thisMonday.getDate() + 4)
+    thisFriday.setHours(0, 0, 0, 0)
+
     let updatedCount = 0
     const ordersToUpdate: Array<{ id: string; settlements: any[] }> = []
 
@@ -30,49 +54,39 @@ export async function POST(request: NextRequest) {
         return // settlements가 없으면 스킵
       }
 
-      // 현재 settlements의 날짜들 추출
-      const currentDates = settlements.map((s: any) => s.date).filter((date: string) => date && typeof date === 'string')
-      
-      if (currentDates.length === 0) {
+      // 이번 주와 다음 주 범위 내의 날짜만 필터링
+      const validSettlements = settlements.filter((settlement: any) => {
+        const dateStr = settlement.date
+        if (!dateStr || typeof dateStr !== 'string') {
+          return false
+        }
+
+        const [year, month, day] = dateStr.split('-').map(Number)
+        const settlementDate = new Date(year, month - 1, day)
+        settlementDate.setHours(0, 0, 0, 0)
+
+        // 이번 주 월요일부터 다음 주 금요일까지의 날짜만 유지
+        return settlementDate >= thisMonday && settlementDate <= nextFriday
+      })
+
+      // 변경사항이 있는지 확인
+      if (validSettlements.length === settlements.length) {
+        // 모든 날짜가 유효 범위 내에 있으면 스킵
         return
       }
 
-      // 다음 주 날짜 추가 (getWeeklyRecurringDates 사용)
-      const allDates = getWeeklyRecurringDates(currentDates, 1)
-      
-      // 이미 있는 날짜는 제외하고 새로운 날짜만 추가
-      const existingDates = new Set(currentDates)
-      const newDates = allDates.filter(date => !existingDates.has(date))
-      
-      if (newDates.length === 0) {
-        return // 새로운 날짜가 없으면 스킵
-      }
-
-      // 새로운 settlements 생성 (기존 settlements + 새로운 날짜들)
-      const updatedSettlements = [...settlements]
-      
-      newDates.forEach((dateStr) => {
-        // 이미 존재하지 않는 날짜만 추가
-        if (!settlements.some((s: any) => s.date === dateStr)) {
-          updatedSettlements.push({
-            date: dateStr,
-            is_settled: false,
-          })
-        }
-      })
-
       // 날짜순으로 정렬
-      updatedSettlements.sort((a: any, b: any) => {
+      validSettlements.sort((a: any, b: any) => {
         return a.date.localeCompare(b.date)
       })
 
       ordersToUpdate.push({
         id: orderDoc.id,
-        settlements: updatedSettlements,
+        settlements: validSettlements,
       })
       
       updatedCount++
-      console.log(`주문 ${orderDoc.id}: ${currentDates.length}개 날짜 -> ${updatedSettlements.length}개 날짜 (${newDates.length}개 추가)`)
+      console.log(`주문 ${orderDoc.id}: ${settlements.length}개 날짜 -> ${validSettlements.length}개 날짜 (${settlements.length - validSettlements.length}개 삭제)`)
     })
 
     // 배치로 업데이트 (500개씩)
@@ -112,30 +126,28 @@ export async function POST(request: NextRequest) {
           return order
         }
 
-        const currentDates = settlements.map((s: any) => s.date).filter((date: string) => date && typeof date === 'string')
-        if (currentDates.length === 0) {
-          return order
-        }
-
-        const allDates = getWeeklyRecurringDates(currentDates, 1)
-        const existingDates = new Set(currentDates)
-        const newDates = allDates.filter(date => !existingDates.has(date))
-        
-        if (newDates.length === 0) {
-          return order
-        }
-
-        const updatedSettlements = [...settlements]
-        newDates.forEach((dateStr) => {
-          if (!settlements.some((s: any) => s.date === dateStr)) {
-            updatedSettlements.push({
-              date: dateStr,
-              is_settled: false,
-            })
+        // 이번 주와 다음 주 범위 내의 날짜만 필터링
+        const validSettlements = settlements.filter((settlement: any) => {
+          const dateStr = settlement.date
+          if (!dateStr || typeof dateStr !== 'string') {
+            return false
           }
+
+          const [year, month, day] = dateStr.split('-').map(Number)
+          const settlementDate = new Date(year, month - 1, day)
+          settlementDate.setHours(0, 0, 0, 0)
+
+          // 이번 주 월요일부터 다음 주 금요일까지의 날짜만 유지
+          return settlementDate >= thisMonday && settlementDate <= nextFriday
         })
 
-        updatedSettlements.sort((a: any, b: any) => {
+        // 변경사항이 있는지 확인
+        if (validSettlements.length === settlements.length) {
+          return order // 변경사항 없음
+        }
+
+        // 날짜순으로 정렬
+        validSettlements.sort((a: any, b: any) => {
           return a.date.localeCompare(b.date)
         })
 
@@ -144,7 +156,7 @@ export async function POST(request: NextRequest) {
         
         return {
           ...order,
-          settlements: updatedSettlements,
+          settlements: validSettlements,
         }
       })
 
@@ -173,7 +185,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: '기존 정기 주문에 다음 주 날짜 추가 완료',
+      message: '기존 정기 주문을 이번 주 + 다음 주 날짜만 남기고 나머지 삭제 완료',
       ordersUpdated: updatedCount,
       customerOrdersUpdated: customerUpdatedCount,
       totalUpdated: updatedCount + customerUpdatedCount,

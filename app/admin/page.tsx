@@ -131,7 +131,7 @@ export default function AdminDashboard() {
               disabled={updatingWeeklyOrders}
               className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-blue-500 text-white font-semibold rounded-card hover:bg-blue-600 active:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-center min-h-[44px] flex items-center justify-center"
             >
-              {updatingWeeklyOrders ? '처리 중...' : '기존 정기 주문에 다음 주 날짜 추가'}
+              {updatingWeeklyOrders ? '처리 중...' : '정기 주문을 이번 주 + 다음 주만 남기기'}
             </button>
             {updateMessage && (
               <div className={`p-3 rounded-card text-sm ${
