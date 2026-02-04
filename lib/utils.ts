@@ -56,22 +56,27 @@ export function getDateFromDayOfWeek(dayOfWeek: '월' | '화' | '수' | '목' | 
 }
 
 /**
- * 선택된 날짜들의 요일을 기반으로 다음 주 같은 요일들의 날짜를 반환
+ * 선택된 날짜들의 요일을 기반으로 여러 주 앞의 같은 요일들의 날짜를 반환
+ * @param selectedDates 선택된 날짜들
+ * @param weeksAhead 몇 주 앞까지 생성할지 (기본값: 8주 = 2개월)
  */
-export function getNextWeekSameDays(selectedDates: string[]): string[] {
+export function getWeeklyRecurringDates(selectedDates: string[], weeksAhead: number = 8): string[] {
   if (selectedDates.length === 0) return []
   
-  const nextWeekDates: string[] = []
+  const allDates: string[] = []
   
+  // 선택된 날짜들부터 시작
   selectedDates.forEach((dateStr) => {
     const date = new Date(dateStr)
-    const dayOfWeek = getDayOfWeek(date)
     
-    // 다음 주 같은 요일 계산 (7일 후)
-    const nextWeekDate = new Date(date)
-    nextWeekDate.setDate(date.getDate() + 7)
-    nextWeekDates.push(formatDate(nextWeekDate))
+    // 0주차부터 weeksAhead주차까지 생성
+    for (let week = 0; week <= weeksAhead; week++) {
+      const recurringDate = new Date(date)
+      recurringDate.setDate(date.getDate() + (week * 7))
+      allDates.push(formatDate(recurringDate))
+    }
   })
   
-  return nextWeekDates
+  // 중복 제거 및 정렬
+  return [...new Set(allDates)].sort()
 }

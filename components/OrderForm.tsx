@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { formatPhoneNumber, getNextWeekDates, formatDate, getDayOfWeek, getNextWeekSameDays } from '@/lib/utils'
+import { formatPhoneNumber, getNextWeekDates, formatDate, getDayOfWeek, getWeeklyRecurringDates } from '@/lib/utils'
 import { Location, DailyCapacity, PaymentMethod } from '@/types'
 
 interface OrderFormProps {
@@ -157,11 +157,11 @@ export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps
 
     setLoading(true)
     try {
-      // 매주 정기 주문이면 다음 주 같은 요일들도 포함
+      // 매주 정기 주문이면 8주치(2개월) 같은 요일들을 모두 포함
       let allOrderDates = [...selectedDates]
       if (isWeeklyOrder) {
-        const nextWeekDates = getNextWeekSameDays(selectedDates)
-        allOrderDates = [...selectedDates, ...nextWeekDates]
+        // 8주치를 미리 생성 (총 9주치: 이번 주 + 다음 8주)
+        allOrderDates = getWeeklyRecurringDates(selectedDates, 8)
       }
 
       const response = await fetch('/api/orders', {
