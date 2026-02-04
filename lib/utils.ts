@@ -112,6 +112,7 @@ export function getWeeklyRecurringDates(selectedDates: string[], weeksAhead: num
     // 날짜 문자열을 파싱 (YYYY-MM-DD 형식)
     const [year, month, day] = dateStr.split('-').map(Number)
     const date = new Date(year, month - 1, day) // 월은 0부터 시작
+    date.setHours(0, 0, 0, 0) // 시간을 명시적으로 0시로 설정 (타임존 문제 방지)
     
     // 유효한 날짜인지 확인
     if (isNaN(date.getTime())) {
@@ -123,6 +124,7 @@ export function getWeeklyRecurringDates(selectedDates: string[], weeksAhead: num
     for (let week = 0; week <= weeksAhead; week++) {
       const recurringDate = new Date(date)
       recurringDate.setDate(date.getDate() + (week * 7))
+      recurringDate.setHours(0, 0, 0, 0) // 시간을 명시적으로 0시로 설정
       const formattedDate = formatDate(recurringDate)
       allDates.push(formattedDate)
     }
