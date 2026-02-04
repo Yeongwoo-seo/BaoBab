@@ -271,11 +271,12 @@ export default function MyOrdersPage() {
                         <td className="px-4 py-3 text-xs sm:text-sm text-gray-900">
                           <div className="flex flex-wrap gap-1.5">
                             {order.settlements?.map((settlement) => {
+                              const settlementDay = getDayOfWeek(new Date(settlement.date))
                               const isWeeklyDay = customer?.orders?.some(co => 
                                 co.is_weekly_order && 
+                                co.order_id === order.id &&
                                 co.settlements.some(s => {
                                   const sDay = getDayOfWeek(new Date(s.date))
-                                  const settlementDay = getDayOfWeek(new Date(settlement.date))
                                   return sDay === settlementDay
                                 })
                               )
@@ -286,7 +287,7 @@ export default function MyOrdersPage() {
                                   </span>
                                   <button
                                     onClick={() => handleCancelDate(order.id, settlement.date)}
-                                    className="text-red-500 hover:text-red-700 text-xs font-bold"
+                                    className="text-red-500 hover:text-red-700 text-xs font-bold w-4 h-4 flex items-center justify-center"
                                     title="날짜 취소"
                                   >
                                     ✕
@@ -324,14 +325,18 @@ export default function MyOrdersPage() {
                   {formatOrderDate(cancelModal.date)} 날짜를 취소하시겠습니까?
                 </p>
                 
-                {customer?.orders?.some(co => 
-                  co.is_weekly_order && 
-                  co.settlements.some(s => {
-                    const sDay = getDayOfWeek(new Date(s.date))
-                    const cancelDay = getDayOfWeek(new Date(cancelModal.date))
-                    return sDay === cancelDay
-                  })
-                ) && (
+                {(() => {
+                  const cancelDay = getDayOfWeek(new Date(cancelModal.date))
+                  const isWeeklyDay = customer?.orders?.some(co => 
+                    co.is_weekly_order && 
+                    co.order_id === cancelModal.orderId &&
+                    co.settlements.some(s => {
+                      const sDay = getDayOfWeek(new Date(s.date))
+                      return sDay === cancelDay
+                    })
+                  )
+                  return isWeeklyDay
+                })() && (
                   <div className="mb-6 space-y-3">
                     <button
                       onClick={() => handleConfirmCancelDate(false)}
@@ -348,14 +353,18 @@ export default function MyOrdersPage() {
                   </div>
                 )}
                 
-                {!customer?.orders?.some(co => 
-                  co.is_weekly_order && 
-                  co.settlements.some(s => {
-                    const sDay = getDayOfWeek(new Date(s.date))
-                    const cancelDay = getDayOfWeek(new Date(cancelModal.date))
-                    return sDay === cancelDay
-                  })
-                ) && (
+                {(() => {
+                  const cancelDay = getDayOfWeek(new Date(cancelModal.date))
+                  const isWeeklyDay = customer?.orders?.some(co => 
+                    co.is_weekly_order && 
+                    co.order_id === cancelModal.orderId &&
+                    co.settlements.some(s => {
+                      const sDay = getDayOfWeek(new Date(s.date))
+                      return sDay === cancelDay
+                    })
+                  )
+                  return !isWeeklyDay
+                })() && (
                   <div className="mb-6">
                     <button
                       onClick={() => handleConfirmCancelDate(false)}
