@@ -30,6 +30,13 @@ export interface Order {
   updated_at: string
 }
 
+export interface CustomerOrder {
+  order_id: string
+  settlements: OrderSettlement[] // 날짜별 정산 정보
+  is_weekly_order: boolean // 정기 주문 여부
+  created_at: string
+}
+
 export interface Customer {
   id: string
   name: string
@@ -38,6 +45,7 @@ export interface Customer {
   total_orders: number
   is_blacklisted: boolean
   is_weekly_order?: boolean // 정기 주문 여부
+  orders?: CustomerOrder[] // 주문 배열
   created_at: string
   updated_at: string
 }

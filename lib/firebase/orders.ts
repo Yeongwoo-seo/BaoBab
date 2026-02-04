@@ -170,9 +170,10 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
     })
     
     const orderRef = await addDoc(ordersRef, orderData)
+    const orderId = orderRef.id
     
     console.log('✅ Order document created successfully:', {
-      orderId: orderRef.id,
+      orderId: orderId,
       settlementsCount: settlements.length,
       settlements: settlements.slice(0, 5), // 처음 5개만 로그
       orderData: {
@@ -182,6 +183,40 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
         settlementsCount: orderData.settlements.length,
       }
     })
+    
+    // customer 문서에 order 정보 추가
+    const customerDocRef = doc(db, 'customer', customerId)
+    const customerDocSnap = await getDoc(customerDocRef)
+    
+    if (customerDocSnap.exists()) {
+      const customerData = customerDocSnap.data()
+      const existingOrders = customerData.orders || []
+      
+      // 새로운 order 추가
+      const newOrder = {
+        order_id: orderId,
+        settlements: settlements,
+        is_weekly_order: data.is_weekly_order || false,
+        created_at: Timestamp.now(),
+      }
+      
+      const updatedOrders = [...existingOrders, newOrder]
+      
+      await updateDoc(customerDocRef, {
+        orders: updatedOrders,
+        updated_at: Timestamp.now(),
+      })
+      
+      console.log('✅ Customer orders array updated:', {
+        customerId: customerId,
+        ordersCount: updatedOrders.length,
+        newOrder: {
+          order_id: newOrder.order_id,
+          settlementsCount: newOrder.settlements.length,
+          is_weekly_order: newOrder.is_weekly_order,
+        }
+      })
+    }
 
     return {
       id: orderRef.id,
