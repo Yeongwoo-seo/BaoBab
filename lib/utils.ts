@@ -56,16 +56,20 @@ export function getWeeklyOrderDays(orders: { settlements: { date: string }[], is
 export function getNextWeekDates(): Date[] {
   const dates: Date[] = []
   const today = new Date()
+  // 시간을 0시로 설정하여 날짜 계산 정확도 향상
+  today.setHours(0, 0, 0, 0)
   const dayOfWeek = today.getDay()
   
   // 다음 주 월요일부터 시작
   const daysUntilMonday = (8 - dayOfWeek) % 7 || 7
   const nextMonday = new Date(today)
   nextMonday.setDate(today.getDate() + daysUntilMonday)
+  nextMonday.setHours(0, 0, 0, 0)
   
   for (let i = 0; i < 5; i++) {
     const date = new Date(nextMonday)
     date.setDate(nextMonday.getDate() + i)
+    date.setHours(0, 0, 0, 0)
     dates.push(date)
   }
   
@@ -73,7 +77,11 @@ export function getNextWeekDates(): Date[] {
 }
 
 export function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0]
+  // 로컬 시간대를 사용하여 날짜 포맷팅 (타임존 문제 방지)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 export function getDateFromDayOfWeek(dayOfWeek: '월' | '화' | '수' | '목' | '금'): Date {
