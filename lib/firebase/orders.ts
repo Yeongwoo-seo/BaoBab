@@ -22,10 +22,16 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
     const { getCapacities } = await import('./dailyCapacity')
     const capacities = await getCapacities(data.orderDates)
     
+    console.log('재고 확인:', {
+      orderDates: data.orderDates,
+      capacities: capacities.map(c => ({ date: c.date, count: c.current_order_count, max: c.max_capa })),
+    })
+    
     // 재고 부족 확인 (정기 주문의 경우 일부 날짜만 재고 부족해도 경고만 표시)
     const unavailableDates: string[] = []
     for (const capacity of capacities) {
       if (capacity.current_order_count >= capacity.max_capa) {
+        console.warn(`재고 부족: ${capacity.date} (${capacity.current_order_count}/${capacity.max_capa})`)
         if (data.is_weekly_order) {
           // 정기 주문의 경우 재고 부족한 날짜는 제외하고 계속 진행
           unavailableDates.push(capacity.date)
@@ -38,7 +44,9 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
     
     // 정기 주문에서 재고 부족한 날짜 제외
     if (data.is_weekly_order && unavailableDates.length > 0) {
+      const beforeFilter = data.orderDates.length
       data.orderDates = data.orderDates.filter(date => !unavailableDates.includes(date))
+      console.log(`정기 주문: 재고 부족한 날짜 제외 (${beforeFilter} -> ${data.orderDates.length})`)
       if (data.orderDates.length === 0) {
         throw new Error('선택하신 요일들이 모두 재고가 부족합니다.')
       }

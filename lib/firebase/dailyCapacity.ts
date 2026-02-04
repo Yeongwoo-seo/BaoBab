@@ -95,12 +95,18 @@ export async function getCapacities(dates: string[]): Promise<DailyCapacity[]> {
       const data = doc.data()
       const settlements = data.settlements || []
       
+      // settlements 배열의 각 날짜에 대해 카운트 증가
       settlements.forEach((settlement: any) => {
-        const date = settlement.date
-        if (orderCounts.hasOwnProperty(date)) {
+        const date = settlement?.date
+        if (date && orderCounts.hasOwnProperty(date)) {
           orderCounts[date]++
         }
       })
+    })
+    
+    console.log('재고 계산:', {
+      totalOrders: ordersSnapshot.size,
+      orderCounts,
     })
     
     // DailyCapacity 배열 생성

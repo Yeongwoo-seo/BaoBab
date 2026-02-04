@@ -234,7 +234,7 @@ export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps
         <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
           수령 희망 장소 <span className="text-red-500">*</span>
         </label>
-        <div className="flex flex-wrap gap-2 mb-2">
+        <div className="flex flex-wrap gap-2">
           {(['Kings Park', 'Eastern Creek'] as Location[]).map((loc) => (
             <button
               key={loc}
@@ -250,13 +250,6 @@ export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps
             </button>
           ))}
         </div>
-        {location && (
-          <p className="text-xs sm:text-sm text-gray-600 mt-1">
-            {location === 'Kings Park' 
-              ? '📍 프레임캐드 팀'
-              : '📍 12시에 런치룸'}
-          </p>
-        )}
       </div>
 
       <div>
