@@ -41,10 +41,11 @@ export default function ImportantNotice({ onAgreementChange }: ImportantNoticePr
             <div className="flex items-start gap-3">
               <span className="text-xl flex-shrink-0">📅</span>
               <div>
-                <h3 className="font-semibold text-xs sm:text-sm text-gray-900 mb-1.5">주문 마감</h3>
-                <p className="text-xs sm:text-sm text-gray-700">
-                  <span className="font-semibold text-primary">매주 목요일 5시</span>에 주문을 마감합니다.
-                </p>
+                <h3 className="font-semibold text-xs sm:text-sm text-gray-900 mb-1.5">주문 시간</h3>
+                <ul className="text-xs sm:text-sm text-gray-700 space-y-1">
+                  <li>• 주문 시작: <span className="font-semibold text-primary">매주 월요일 9시</span></li>
+                  <li>• 주문 마감: <span className="font-semibold text-primary">매주 5시</span></li>
+                </ul>
               </div>
             </div>
 
@@ -52,9 +53,10 @@ export default function ImportantNotice({ onAgreementChange }: ImportantNoticePr
               <span className="text-xl flex-shrink-0">📍</span>
               <div>
                 <h3 className="font-semibold text-xs sm:text-sm text-gray-900 mb-1.5">수령 장소</h3>
-                <p className="text-xs sm:text-sm text-gray-700">
-                  Kings Park, Eastern Creek 모두 <span className="font-semibold text-primary">프레임캐드 팀</span>으로 배송됩니다.
-                </p>
+                <ul className="text-xs sm:text-sm text-gray-700 space-y-1">
+                  <li>• <span className="font-semibold text-primary">Kings Park</span>: 프레임캐드 팀</li>
+                  <li>• <span className="font-semibold text-primary">Eastern Creek</span>: 12시에 런치룸</li>
+                </ul>
               </div>
             </div>
 
@@ -73,9 +75,9 @@ export default function ImportantNotice({ onAgreementChange }: ImportantNoticePr
             <div className="flex items-start gap-3">
               <span className="text-xl flex-shrink-0">🚫</span>
               <div>
-                <h3 className="font-semibold text-xs sm:text-sm text-gray-900 mb-1.5">취소 및 환불 규정</h3>
+                <h3 className="font-semibold text-xs sm:text-sm text-gray-900 mb-1.5">취소 및 변경</h3>
                 <p className="text-xs sm:text-sm text-gray-700">
-                  취소 및 변경은 <span className="font-semibold text-primary">전날 오후 12시까지</span> 가능합니다.
+                  취소 및 변경은 <span className="font-semibold text-primary">My Order 탭</span>에서 가능합니다.
                 </p>
               </div>
             </div>

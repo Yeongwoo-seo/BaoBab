@@ -21,6 +21,7 @@ export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps
   const [contact, setContact] = useState('')
   const [location, setLocation] = useState<Location | ''>('')
   const [selectedDates, setSelectedDates] = useState<string[]>([])
+  const [isWeeklyOrder, setIsWeeklyOrder] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('')
   const [allergies, setAllergies] = useState('')
   const [capacities, setCapacities] = useState<Record<string, DailyCapacity>>({})
@@ -225,7 +226,7 @@ export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps
         <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
           수령 희망 장소 <span className="text-red-500">*</span>
         </label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 mb-2">
           {(['Kings Park', 'Eastern Creek'] as Location[]).map((loc) => (
             <button
               key={loc}
@@ -241,6 +242,13 @@ export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps
             </button>
           ))}
         </div>
+        {location && (
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">
+            {location === 'Kings Park' 
+              ? '📍 프레임캐드 팀'
+              : '📍 12시에 런치룸'}
+          </p>
+        )}
       </div>
 
       <div>
@@ -291,6 +299,19 @@ export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps
               </button>
             )
           })}
+        </div>
+        <div className="mt-3">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isWeeklyOrder}
+              onChange={(e) => setIsWeeklyOrder(e.target.checked)}
+              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+            />
+            <span className="text-xs sm:text-sm text-gray-700">
+              매주 먹을 거다
+            </span>
+          </label>
         </div>
       </div>
 
