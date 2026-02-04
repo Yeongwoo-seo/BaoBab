@@ -157,10 +157,11 @@ export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps
 
     setLoading(true)
     try {
-      // 매주 정기 주문이면 다음 주까지만 자동 생성
+      // 매주 정기 주문이면 다음 주까지 자동 생성
       let allOrderDates = [...selectedDates]
       if (isWeeklyOrder) {
-        // 다음 주까지만 생성 (총 2주치: 이번 주 + 다음 주)
+        // 다음 주까지 생성 (총 2주치: 이번 주 + 다음 주)
+        // weeksAhead: 1 = 이번 주(0) + 다음 주(1) = 총 2주치
         allOrderDates = getWeeklyRecurringDates(selectedDates, 1)
       }
 

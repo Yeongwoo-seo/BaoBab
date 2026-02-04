@@ -26,6 +26,7 @@ export function getDayOfWeekFromDate(dateStr: string): '월' | '화' | '수' | '
   try {
     const [year, month, day] = dateStr.split('-').map(Number)
     const date = new Date(year, month - 1, day)
+    date.setHours(0, 0, 0, 0)
     if (isNaN(date.getTime())) return null
     return getDayOfWeek(date)
   } catch {
@@ -121,6 +122,8 @@ export function getWeeklyRecurringDates(selectedDates: string[], weeksAhead: num
     }
     
     // 0주차부터 weeksAhead주차까지 생성
+    // 0주차 = 선택한 날짜 (이번 주)
+    // 1주차 = 선택한 날짜 + 7일 (다음 주)
     for (let week = 0; week <= weeksAhead; week++) {
       const recurringDate = new Date(date)
       recurringDate.setDate(date.getDate() + (week * 7))
