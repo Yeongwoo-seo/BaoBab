@@ -46,6 +46,7 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
       contact: String(data.contact), // string 타입으로 명시적 변환
       location: data.location,
       allergies: data.allergies || '',
+      is_weekly_order: data.is_weekly_order || false,
       updated_at: Timestamp.now(),
     })
   } else {
@@ -81,6 +82,7 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
     payment_method: data.payment_method,
     allergies: data.allergies || '',
     settlements: settlements,
+    is_weekly_order: data.is_weekly_order || false,
     created_at: Timestamp.now(),
     updated_at: Timestamp.now(),
   }
@@ -214,6 +216,7 @@ export async function getOrders(filters?: {
           payment_method: data.payment_method,
           allergies: data.allergies || '',
           settlements: settlements,
+          is_weekly_order: data.is_weekly_order || false,
           created_at: createdAt,
           updated_at: updatedAt,
         })

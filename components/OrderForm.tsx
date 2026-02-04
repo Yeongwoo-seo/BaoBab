@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { formatPhoneNumber, getNextWeekDates, formatDate, getDayOfWeek } from '@/lib/utils'
+import { formatPhoneNumber, getNextWeekDates, formatDate, getDayOfWeek, getNextWeekSameDays } from '@/lib/utils'
 import { Location, DailyCapacity, PaymentMethod } from '@/types'
 
 interface OrderFormProps {
@@ -157,6 +157,13 @@ export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps
 
     setLoading(true)
     try {
+      // 매주 정기 주문이면 다음 주 같은 요일들도 포함
+      let allOrderDates = [...selectedDates]
+      if (isWeeklyOrder) {
+        const nextWeekDates = getNextWeekSameDays(selectedDates)
+        allOrderDates = [...selectedDates, ...nextWeekDates]
+      }
+
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -164,9 +171,10 @@ export default function OrderForm({ onSubmit, isAgreed = false }: OrderFormProps
           name: name.trim(),
           contact: contact.replace(/\D/g, ''),
           location: location as Location,
-          orderDates: selectedDates,
+          orderDates: allOrderDates,
           payment_method: paymentMethod as PaymentMethod,
           allergies: allergies.trim() || undefined,
+          is_weekly_order: isWeeklyOrder,
         }),
       })
 

@@ -25,6 +25,7 @@ export interface Order {
   payment_method?: PaymentMethod
   allergies?: string
   settlements: OrderSettlement[] // 날짜별 정산 정보 배열 (필수)
+  is_weekly_order?: boolean // 정기 주문 여부
   created_at: string
   updated_at: string
 }
@@ -47,6 +48,7 @@ export interface OrderFormData {
   orderDates: string[]
   payment_method?: PaymentMethod
   allergies?: string
+  is_weekly_order?: boolean
 }
 
 export interface WeeklySummary {

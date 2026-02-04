@@ -54,3 +54,24 @@ export function getDateFromDayOfWeek(dayOfWeek: '월' | '화' | '수' | '목' | 
   
   return targetDate
 }
+
+/**
+ * 선택된 날짜들의 요일을 기반으로 다음 주 같은 요일들의 날짜를 반환
+ */
+export function getNextWeekSameDays(selectedDates: string[]): string[] {
+  if (selectedDates.length === 0) return []
+  
+  const nextWeekDates: string[] = []
+  
+  selectedDates.forEach((dateStr) => {
+    const date = new Date(dateStr)
+    const dayOfWeek = getDayOfWeek(date)
+    
+    // 다음 주 같은 요일 계산 (7일 후)
+    const nextWeekDate = new Date(date)
+    nextWeekDate.setDate(date.getDate() + 7)
+    nextWeekDates.push(formatDate(nextWeekDate))
+  })
+  
+  return nextWeekDates
+}
