@@ -70,6 +70,7 @@ export async function createOrder(data: OrderFormData): Promise<Order> {
       contact: String(data.contact), // string 타입으로 명시적 변환
       location: data.location,
       allergies: data.allergies || '',
+      is_weekly_order: data.is_weekly_order || false,
       created_at: Timestamp.now(),
       updated_at: Timestamp.now(),
     })

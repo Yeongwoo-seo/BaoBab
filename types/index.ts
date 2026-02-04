@@ -37,6 +37,7 @@ export interface Customer {
   location: Location | null
   total_orders: number
   is_blacklisted: boolean
+  is_weekly_order?: boolean // 정기 주문 여부
   created_at: string
   updated_at: string
 }
